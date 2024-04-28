@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const config = @import("src/config.zig");
-const mimalloc_lib = @import("lib/mimalloc/lib.zig");
+//const mimalloc_lib = @import("lib/mimalloc/lib.zig");
 const tcc_lib = @import("lib/tcc/lib.zig");
 
 // FIND: v0.4
@@ -21,7 +21,7 @@ var optRT: ?config.Runtime = undefined;
 var stdx: *std.Build.Module = undefined;
 var tcc: *std.Build.Module = undefined;
 var linenoise: *std.Build.Module = undefined;
-var mimalloc: *std.Build.Module = undefined;
+//var mimalloc: *std.Build.Module = undefined;
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
@@ -42,7 +42,7 @@ pub fn build(b: *std.Build) !void {
         .root_source_file = .{ .path = thisDir() ++ "/src/stdx/stdx.zig" },
     });
     tcc = tcc_lib.createModule(b);
-    mimalloc = mimalloc_lib.createModule(b);
+    //mimalloc = mimalloc_lib.createModule(b);
     linenoise = createLinenoiseModule(b);
 
     {
@@ -284,10 +284,10 @@ pub fn buildAndLinkDeps(step: *std.Build.Step.Compile, opts: Options) !void {
 
     step.linkLibC();
 
-    if (opts.malloc == .mimalloc) {
-        mimalloc_lib.addModule(step, "mimalloc", mimalloc);
-        mimalloc_lib.buildAndLink(b, step, .{});
-    }
+    //if (opts.malloc == .mimalloc) {
+    //    mimalloc_lib.addModule(step, "mimalloc", mimalloc);
+    //    mimalloc_lib.buildAndLink(b, step, .{});
+    //}
 
     if (vmEngine == .c) {
         const lib = try buildCVM(b, opts);
@@ -367,11 +367,11 @@ fn getDefaultOptions(target: std.zig.CrossTarget, optimize: std.builtin.Optimize
     if (target.cpu_arch.?.isWasm()) {
         malloc = .zig;
     } else {
-        if (optimize != .Debug) {
-            malloc = .mimalloc;
-        } else {
-            malloc = .zig;
-        }
+        //if (optimize != .Debug) {
+        //    malloc = .mimalloc;
+        //} else {
+        malloc = .zig;
+        //}
     }
     return .{
         .selinux = selinux,
