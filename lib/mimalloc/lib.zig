@@ -1,18 +1,17 @@
 const std = @import("std");
 
-pub fn createModule(b: *std.Build) *std.build.Module {
+pub fn createModule(b: *std.Build) *std.Build.Module {
     return b.createModule(.{
-        .source_file = .{ .path = thisDir() ++ "/mimalloc.zig" },
+        .root_source_file = .{ .path = thisDir() ++ "/mimalloc.zig" },
     });
 }
 
-pub fn addModule(step: *std.build.CompileStep, name: []const u8, mod: *std.build.Module) void {
+pub fn addModule(step: *std.build.CompileStep, name: []const u8, mod: *std.Build.Module) void {
     step.addModule(name, mod);
     step.addIncludePath(.{ .path = thisDir() ++ "/vendor/include" });
 }
 
-const BuildOptions = struct {
-};
+const BuildOptions = struct {};
 
 pub fn buildAndLink(b: *std.Build, step: *std.build.CompileStep, opts: BuildOptions) void {
     _ = opts;
@@ -27,9 +26,8 @@ pub fn buildAndLink(b: *std.Build, step: *std.build.CompileStep, opts: BuildOpti
 
     var c_flags = std.ArrayList([]const u8).init(b.allocator);
     // c_flags.append("-D_GNU_SOURCE=1") catch @panic("error");
-    if (lib.target.getOsTag() == .windows) {
-    } else if (lib.target.getOsTag() == .macos) {
-        if (lib.target.getCpuArch() == .aarch64) {
+    if (lib.target.os_tag == .windows) {} else if (lib.target.os_tag == .macos) {
+        if (lib.target.cpu_arch == .aarch64) {
             lib.addSystemIncludePath(.{ .path = "/Applications/Xcode_15.0.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include" });
         } else {
             // Github macos-12 runner (https://github.com/actions/runner-images/blob/main/images/macos/macos-12-Readme.md).
@@ -41,7 +39,7 @@ pub fn buildAndLink(b: *std.Build, step: *std.build.CompileStep, opts: BuildOpti
     if (lib.optimize == .Debug) {
         // For debugging:
         // c_flags.append("-O0") catch @panic("error");
-        // if (step.target.getCpuArch().isWasm()) {
+        // if (step.target.cpu_arch.isWasm()) {
         //     // Compile with some optimization or number of function locals will exceed max limit in browsers.
         //     c_flags.append("-O1") catch @panic("error");
         // }
@@ -55,7 +53,7 @@ pub fn buildAndLink(b: *std.Build, step: *std.build.CompileStep, opts: BuildOpti
         c_flags.append("-DMI_STAT=0") catch @panic("error");
     }
 
-    if (lib.target.getOsTag() == .windows) {
+    if (lib.target.os_tag == .windows) {
         step.linkSystemLibrary("bcrypt");
     }
 
@@ -77,7 +75,7 @@ pub fn buildAndLink(b: *std.Build, step: *std.build.CompileStep, opts: BuildOpti
     }) catch @panic("error");
     for (sources.items) |src| {
         lib.addCSourceFile(.{
-            .file = .{ .path = b.fmt("{s}{s}", .{thisDir(), src}) },
+            .file = .{ .path = b.fmt("{s}{s}", .{ thisDir(), src }) },
             .flags = c_flags.items,
         });
     }

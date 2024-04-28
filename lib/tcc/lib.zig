@@ -1,12 +1,12 @@
 const std = @import("std");
 
-pub fn createModule(b: *std.Build) *std.build.Module {
+pub fn createModule(b: *std.Build) *std.Build.Module {
     return b.createModule(.{
-        .source_file = .{ .path = thisDir() ++ "/tcc.zig" },
+        .root_source_file = .{ .path = thisDir() ++ "/tcc.zig" },
     });
 }
 
-pub fn addModule(step: *std.build.CompileStep, name: []const u8, mod: *std.build.Module) void {
+pub fn addModule(step: *std.build.CompileStep, name: []const u8, mod: *std.Build.Module) void {
     step.addModule(name, mod);
     step.addIncludePath(.{ .path = thisDir() ++ "/vendor" });
 }
@@ -30,8 +30,7 @@ pub fn buildAndLink(b: *std.Build, step: *std.build.CompileStep, opts: BuildOpti
         c_flags.append("-DHAVE_SELINUX=1") catch @panic("error");
     }
     // c_flags.append("-D_GNU_SOURCE=1") catch @panic("error");
-    if (lib.target.getOsTag() == .windows) {
-    }
+    if (lib.target.os_tag == .windows) {}
     if (lib.optimize == .Debug) {
         // For debugging:
         // c_flags.append("-O0") catch @panic("error");
@@ -44,7 +43,7 @@ pub fn buildAndLink(b: *std.Build, step: *std.build.CompileStep, opts: BuildOpti
     }) catch @panic("error");
     for (sources.items) |src| {
         lib.addCSourceFile(.{
-            .file = .{ .path = b.fmt("{s}{s}", .{thisDir(), src}) },
+            .file = .{ .path = b.fmt("{s}{s}", .{ thisDir(), src }) },
             .flags = c_flags.items,
         });
     }
