@@ -130,11 +130,11 @@ pub const VMrunner = struct {
     }
 
     pub fn expectErrorReport2(self: *VMrunner, res: EvalResult, expReport: []const u8) !void {
-        var errorMismatch = false;
+        const errorMismatch = false;
         if (res.code == c.Success) {
             const val_dump = c.newValueDump(self.vm, res.value);
             defer c.freeStr(self.vm, val_dump);
-            std.debug.print("expected error, found: {s}\n", .{ c.fromStr(val_dump) });
+            std.debug.print("expected error, found: {s}\n", .{c.fromStr(val_dump)});
             return error.TestUnexpectedError;
         }
         // Continue to compare report.
@@ -227,7 +227,7 @@ pub const VMrunner = struct {
                 }
                 return err;
             };
-        }  else {
+        } else {
             if (res_code != c.Success) {
                 errReport(vm, res_code);
                 return error.EvalError;
@@ -303,7 +303,7 @@ pub const VMrunner = struct {
 pub fn compile(config: Config, src: []const u8) !void {
     var run = VMrunner.init();
     defer run.deinit();
-    
+
     defer {
         if (config.silent) {
             c.setSilent(false);
@@ -390,7 +390,7 @@ pub fn eqUserError(alloc: std.mem.Allocator, act: []const u8, expTmpl: []const u
     var curTmpl = expTmpl;
     while (true) {
         var found = false;
-        var pos: usize = 0;
+        const pos: usize = 0;
         if (!cy.isWasm) {
             if (std.mem.indexOfPos(u8, curTmpl, pos, "@AbsPath(")) |idx| {
                 if (std.mem.indexOfScalarPos(u8, curTmpl, idx, ')')) |endIdx| {
@@ -404,12 +404,12 @@ pub fn eqUserError(alloc: std.mem.Allocator, act: []const u8, expTmpl: []const u
                     try exp.append(alloc, std.fs.path.sep);
 
                     const relPathStart = exp.items.len;
-                    try exp.appendSlice(alloc, copy[idx+9..endIdx]);
+                    try exp.appendSlice(alloc, copy[idx + 9 .. endIdx]);
                     if (builtin.os.tag == .windows) {
                         _ = std.mem.replaceScalar(u8, exp.items[relPathStart..], '/', '\\');
                     }
 
-                    try exp.appendSlice(alloc, copy[endIdx+1..]);
+                    try exp.appendSlice(alloc, copy[endIdx + 1 ..]);
                     alloc.free(copy);
                     curTmpl = exp.items;
                     found = true;

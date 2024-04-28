@@ -6,9 +6,10 @@ pub fn createModule(b: *std.Build) *std.Build.Module {
     });
 }
 
-pub fn addModule(step: *std.build.CompileStep, name: []const u8, mod: *std.Build.Module) void {
-    step.addModule(name, mod);
-    step.addIncludePath(.{ .path = thisDir() ++ "/vendor/include" });
+pub fn addModule(b: *std.Build, name: []const u8, mod: *std.Build.Module) void {
+    if (mod.owner != b) @compileError("unexpected mod owner");
+    b.modules.put(b.dupe(name), mod) catch @panic("OOM");
+    mod.addIncludePath(.{ .path = thisDir() ++ "/vendor/include" });
 }
 
 const BuildOptions = struct {};

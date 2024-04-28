@@ -48,7 +48,7 @@ pub fn build(b: *std.Build) !void {
     {
         const step = b.step("cli", "Build main cli.");
 
-        var opts = getDefaultOptions(target.query, optimize);
+        var opts = getDefaultOptions(target, optimize);
         opts.applyOverrides();
 
         const exe = b.addExecutable(.{
@@ -60,7 +60,7 @@ pub fn build(b: *std.Build) !void {
 
         if (opts.optimize != .Debug) {
             // Sometimes there are issues with strip for ReleaseFast + wasi.
-            if (opts.target.os_tag != .wasi) {
+            if (opts.target.query.os_tag != .wasi) {
                 exe.dead_strip_dylibs = true;
             }
         }
@@ -109,7 +109,11 @@ pub fn build(b: *std.Build) !void {
 
         var opts = getDefaultOptions(target, optimize);
         opts.ffi = false;
-        opts.malloc = if (target.cpu_arch.isWasm()) .zig else .malloc;
+        if (target.query.cpu_arch) |cpu_arch| {
+            opts.malloc = if (cpu_arch.isWasm()) .zig else .malloc;
+        } else {
+            opts.malloc = .malloc;
+        }
         opts.cli = false;
         opts.rt = .pm;
         opts.applyOverrides();
@@ -120,8 +124,8 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = optimize,
         });
-        if (lib.optimize != .Debug) {
-            lib.strip = true;
+        if (opts.optimize != .Debug) {
+            lib.dead_strip_dylibs = true;
         }
         lib.addIncludePath(.{ .path = thisDir() ++ "/src" });
 
@@ -135,7 +139,11 @@ pub fn build(b: *std.Build) !void {
 
         var opts = getDefaultOptions(target, optimize);
         opts.ffi = false;
-        opts.malloc = if (target.cpu_arch.isWasm()) .zig else .malloc;
+        if (target.query.cpu_arch) |cpu_arch| {
+            opts.malloc = if (cpu_arch.isWasm()) .zig else .malloc;
+        } else {
+            opts.malloc = .malloc;
+        }
         opts.cli = false;
         opts.applyOverrides();
 
@@ -149,7 +157,11 @@ pub fn build(b: *std.Build) !void {
 
         var opts = getDefaultOptions(target, optimize);
         opts.ffi = false;
-        opts.malloc = if (target.cpu_arch.isWasm()) .zig else .malloc;
+        if (target.query.cpu_arch) |cpu_arch| {
+            opts.malloc = if (cpu_arch.isWasm()) .zig else .malloc;
+        } else {
+            opts.malloc = .malloc;
+        }
         opts.cli = false;
         opts.applyOverrides();
 
@@ -159,16 +171,18 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = optimize,
         });
-        if (lib.optimize != .Debug) {
-            lib.strip = true;
+        if (opts.optimize != .Debug) {
+            lib.dead_strip_dylibs = true;
         }
         lib.addIncludePath(.{ .path = thisDir() ++ "/src" });
-
-        if (target.cpu_arch.isWasm()) {
-            // Export table so non-exported functions can still be invoked from:
-            // `instance.exports.__indirect_function_table`
-            lib.export_table = true;
+        if (target.query.cpu_arch) |cpu_arch| {
+            if (cpu_arch.isWasm()) {
+                // Export table so non-exported functions can still be invoked from:
+                // `instance.exports.__indirect_function_table`
+                lib.export_table = true;
+            }
         }
+
         lib.rdynamic = true;
 
         try buildAndLinkDeps(lib, opts);
@@ -188,7 +202,6 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = optimize,
             .filter = testFilter,
-            .main_pkg_path = .{ .path = "." },
         });
         step.addIncludePath(.{ .path = thisDir() ++ "/src" });
         step.rdynamic = true;
@@ -215,7 +228,6 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = optimize,
             .filter = testFilter,
-            .main_pkg_path = .{ .path = "." },
         });
         step.addIncludePath(.{ .path = thisDir() ++ "/src" });
         step.rdynamic = true;
@@ -223,9 +235,9 @@ pub fn build(b: *std.Build) !void {
         try addBuildOptions(b, step, opts);
         // Is this even needed?
         //step.addModule("stdx", stdx);
-        step.addAnonymousModule("tcc", .{
-            .root_source_file = .{ .path = thisDir() ++ "/src/tcc_stub.zig" },
-        });
+        //step.addAnonymousModule("tcc", .{
+        //    .root_source_file = .{ .path = thisDir() ++ "/src/tcc_stub.zig" },
+        //});
 
         opts = getDefaultOptions(target, optimize);
         opts.trackGlobalRc = true;
@@ -248,7 +260,6 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = optimize,
             .filter = testFilter,
-            .main_pkg_path = .{ .path = "." },
         });
         step.addIncludePath(.{ .path = thisDir() ++ "/src" });
         step.rdynamic = true;
@@ -291,32 +302,34 @@ pub fn buildAndLinkDeps(step: *std.Build.Step.Compile, opts: Options) !void {
 
     if (vmEngine == .c) {
         const lib = try buildCVM(b, opts);
-        if (opts.target.cpu_arch.isWasm()) {
-            lib.stack_protector = false;
-        }
+        //if (opts.target.query.cpu_arch.?.isWasm()) {
+        //    lib.stack_protector = false;
+        //}
         step.addObject(lib);
     }
 
     if (opts.ffi) {
-        tcc_lib.addModule(step, "tcc", tcc);
+        tcc_lib.addModule(b, "tcc", tcc);
         tcc_lib.buildAndLink(b, step, .{
             .selinux = selinux,
+            .target = opts.target,
+            .optimize = opts.optimize,
         });
     } else {
-        step.addAnonymousModule("tcc", .{
-            .root_source_file = .{ .path = thisDir() ++ "/src/tcc_stub.zig" },
-        });
+        //step.addAnonymousModule("tcc", .{
+        //    .root_source_file = .{ .path = thisDir() ++ "/src/tcc_stub.zig" },
+        //});
         // Disable stack protector since the compiler isn't linking __stack_chk_guard/__stack_chk_fail.
-        step.stack_protector = false;
+        //step.stack_protector = false;
     }
 
-    if (opts.cli and opts.target.os_tag != .windows and opts.target.os_tag != .wasi) {
-        addLinenoiseModule(step, "linenoise", linenoise);
-        buildAndLinkLinenoise(b, step);
+    if (opts.cli and opts.target.query.os_tag != .windows and opts.target.query.os_tag != .wasi) {
+        addLinenoiseModule(b, "linenoise", linenoise);
+        buildAndLinkLinenoise(b, step, opts);
     } else {
-        step.addAnonymousModule("linenoise", .{
-            .root_source_file = .{ .path = thisDir() ++ "/src/ln_stub.zig" },
-        });
+        //step.addAnonymousModule("linenoise", .{
+        //    .root_source_file = .{ .path = thisDir() ++ "/src/ln_stub.zig" },
+        //});
     }
 
     if (opts.jit) {
@@ -330,7 +343,7 @@ pub const Options = struct {
     selinux: bool,
     trackGlobalRc: bool,
     trace: bool,
-    target: std.zig.CrossTarget,
+    target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
     malloc: config.Allocator,
     static: bool,
@@ -361,18 +374,17 @@ pub const Options = struct {
 //     tcc: *std.Build.Module,
 // },
 
-fn getDefaultOptions(target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode) Options {
+fn getDefaultOptions(target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) Options {
     var malloc: config.Allocator = undefined;
+    var isWasm = false;
     // Use mimalloc for fast builds.
-    if (target.cpu_arch.?.isWasm()) {
-        malloc = .zig;
+    if (target.query.cpu_arch) |cpu_arch| {
+        isWasm = cpu_arch.isWasm();
+        malloc = if (isWasm) .zig else .malloc;
     } else {
-        //if (optimize != .Debug) {
-        //    malloc = .mimalloc;
-        //} else {
-        malloc = .zig;
-        //}
+        malloc = .malloc;
     }
+
     return .{
         .selinux = selinux,
         .trackGlobalRc = optimize == .Debug,
@@ -381,9 +393,9 @@ fn getDefaultOptions(target: std.zig.CrossTarget, optimize: std.builtin.Optimize
         .optimize = optimize,
         .gc = true,
         .malloc = malloc,
-        .static = !target.cpu_arch.?.isWasm(),
-        .ffi = !target.cpu_arch.?.isWasm(),
-        .cli = !target.cpu_arch.?.isWasm(),
+        .static = !isWasm,
+        .ffi = !isWasm,
+        .cli = !isWasm,
         .jit = false,
         .rt = .vm,
         .link_test = false,
@@ -413,7 +425,7 @@ fn createBuildOptions(b: *std.Build, opts: Options) !*std.Build.Step.Options {
     build_options.addOption(config.Engine, "vmEngine", vmEngine);
     build_options.addOption(bool, "trace", opts.trace);
     build_options.addOption(bool, "trackGlobalRC", opts.trackGlobalRc);
-    build_options.addOption(bool, "is32Bit", is32Bit(opts.target));
+    build_options.addOption(bool, "is32Bit", is32Bit(opts.target.query));
     build_options.addOption(bool, "gc", opts.gc);
     build_options.addOption(bool, "ffi", opts.ffi);
     build_options.addOption(bool, "cli", opts.cli);
@@ -430,14 +442,13 @@ fn addBuildOptions(b: *std.Build, step: *std.Build.Step.Compile, opts: Options) 
     step.root_module.addOptions("build_options", build_options);
 }
 
-fn addTraceTest(b: *std.Build, opts: Options) !*std.build.LibExeObjStep {
+fn addTraceTest(b: *std.Build, opts: Options) !*std.Build.Step.Compile {
     const step = b.addTest(.{
         .name = "trace_test",
         .root_source_file = .{ .path = "./test/trace_test.zig" },
         .optimize = opts.optimize,
         .target = opts.target,
         .filter = testFilter,
-        .main_pkg_path = .{ .path = "." },
     });
     step.addIncludePath(.{ .path = thisDir() ++ "/src" });
 
@@ -450,10 +461,14 @@ fn addTraceTest(b: *std.Build, opts: Options) !*std.build.LibExeObjStep {
     return step;
 }
 
-fn is32Bit(target: std.zig.CrossTarget) bool {
-    switch (target.cpu_arch.?) {
-        .wasm32, .x86 => return true,
-        else => return false,
+fn is32Bit(target_query: std.zig.CrossTarget) bool {
+    if (target_query.cpu_arch) |cpu_arch| {
+        switch (cpu_arch) {
+            .wasm32, .x86 => return true,
+            else => return false,
+        }
+    } else {
+        return false;
     }
 }
 
@@ -467,14 +482,14 @@ inline fn thisDir() []const u8 {
 }
 
 pub const PrintStep = struct {
-    step: std.build.Step,
+    step: std.Build.Step,
     build: *std.Build,
     str: []const u8,
 
     pub fn init(build_: *std.Build, str: []const u8) PrintStep {
         return PrintStep{
             .build = build_,
-            .step = std.build.Step.init(.{
+            .step = std.Build.Step.init(.{
                 .id = .custom,
                 .name = "print",
                 .owner = build_,
@@ -484,7 +499,7 @@ pub const PrintStep = struct {
         };
     }
 
-    fn make(step: *std.build.Step, _: *std.Progress.Node) anyerror!void {
+    fn make(step: *std.Build.Step, _: *std.Progress.Node) anyerror!void {
         const self: *PrintStep = @fieldParentPtr("step", step);
         std.io.getStdOut().writer().writeAll(self.str) catch unreachable;
     }
@@ -497,8 +512,9 @@ pub fn buildCVM(b: *std.Build, opts: Options) !*std.Build.Step.Compile {
         .optimize = opts.optimize,
     });
     lib.linkLibC();
-    if (lib.optimize != .Debug) {
-        lib.strip = true;
+
+    if (opts.optimize != .Debug) {
+        lib.dead_strip_dylibs = true;
     }
 
     var cflags = std.ArrayList([]const u8).init(b.allocator);
@@ -516,7 +532,7 @@ pub fn buildCVM(b: *std.Build, opts: Options) !*std.Build.Step.Compile {
     } else {
         try cflags.append("-DTRACE=0");
     }
-    if (is32Bit(opts.target)) {
+    if (is32Bit(opts.target.query)) {
         try cflags.append("-DIS_32BIT=1");
     } else {
         try cflags.append("-DIS_32BIT=0");
@@ -529,7 +545,8 @@ pub fn buildCVM(b: *std.Build, opts: Options) !*std.Build.Step.Compile {
 
     // Disable traps for arithmetic/bitshift overflows.
     // Note that changing this alone doesn't clear the build cache.
-    lib.disable_sanitize_c = true;
+    // Where was the source code for this?
+    //lib.disable_sanitize_c = true;
 
     lib.addIncludePath(.{ .path = thisDir() ++ "/src" });
     lib.addCSourceFile(.{ .file = .{ .path = thisDir() ++ "/src/vm.c" }, .flags = cflags.items });
@@ -553,24 +570,26 @@ fn buildLib(b: *std.Build, opts: Options) !*std.Build.Step.Compile {
             .optimize = opts.optimize,
         });
     }
-    if (lib.optimize != .Debug) {
-        lib.strip = true;
+    if (opts.optimize != .Debug) {
+        lib.dead_strip_dylibs = true;
     }
     lib.addIncludePath(.{ .path = thisDir() ++ "/src" });
 
-    if (opts.target.cpu_arch.isWasm()) {
-        // Export table so non-exported functions can still be invoked from:
-        // `instance.exports.__indirect_function_table`
-        lib.export_table = true;
+    if (opts.target.query.cpu_arch) |cpu_arch| {
+        if (cpu_arch.isWasm()) {
+            // Export table so non-exported functions can still be invoked from:
+            // `instance.exports.__indirect_function_table`
+            lib.export_table = true;
+        }
     }
 
     if (opts.cli) {
-        if (opts.target.os_tag == .windows) {
+        if (opts.target.query.os_tag == .windows) {
             lib.linkSystemLibrary("ole32");
             lib.linkSystemLibrary("crypt32");
             lib.linkSystemLibrary("ws2_32");
 
-            if (opts.target.getAbi() == .msvc) {
+            if (opts.target.query.abi.? == .msvc) {
                 lib.linkSystemLibrary("advapi32");
                 lib.linkSystemLibrary("shell32");
             }
@@ -591,16 +610,16 @@ pub fn createLinenoiseModule(b: *std.Build) *std.Build.Module {
     });
 }
 
-pub fn addLinenoiseModule(step: *std.Build.Step.Compile, name: []const u8, mod: *std.Build.Module) void {
-    step.addModule(name, mod);
-    step.addIncludePath(.{ .path = thisDir() ++ "/lib/linenoise" });
+pub fn addLinenoiseModule(b: *std.Build, name: []const u8, mod: *std.Build.Module) void {
+    b.modules.put(b.dupe(name), mod) catch @panic("OOM");
+    mod.addIncludePath(.{ .path = thisDir() ++ "/lib/linenoise" });
 }
 
-pub fn buildAndLinkLinenoise(b: *std.Build, step: *std.build.CompileStep) void {
+pub fn buildAndLinkLinenoise(b: *std.Build, step: *std.Build.Step.Compile, opts: Options) void {
     const lib = b.addStaticLibrary(.{
         .name = "linenoise",
-        .target = step.target,
-        .optimize = step.optimize,
+        .target = opts.target,
+        .optimize = opts.optimize,
     });
     lib.addIncludePath(.{ .path = thisDir() ++ "/lib/linenoise" });
     lib.linkLibC();
