@@ -61,7 +61,7 @@ pub fn build(b: *std.Build) !void {
         if (opts.optimize != .Debug) {
             // Sometimes there are issues with strip for ReleaseFast + wasi.
             if (opts.target.query.os_tag != .wasi) {
-                exe.dead_strip_dylibs = true;
+                //exe.dead_strip_dylibs = true;
             }
         }
         exe.addIncludePath(.{ .path = thisDir() ++ "/src" });
@@ -125,7 +125,7 @@ pub fn build(b: *std.Build) !void {
             .optimize = optimize,
         });
         if (opts.optimize != .Debug) {
-            lib.dead_strip_dylibs = true;
+            //lib.dead_strip_dylibs = true;
         }
         lib.addIncludePath(.{ .path = thisDir() ++ "/src" });
 
@@ -172,7 +172,7 @@ pub fn build(b: *std.Build) !void {
             .optimize = optimize,
         });
         if (opts.optimize != .Debug) {
-            lib.dead_strip_dylibs = true;
+            //lib.dead_strip_dylibs = true;
         }
         lib.addIncludePath(.{ .path = thisDir() ++ "/src" });
         if (target.query.cpu_arch) |cpu_arch| {
@@ -204,6 +204,7 @@ pub fn build(b: *std.Build) !void {
             .filter = testFilter,
         });
         step.addIncludePath(.{ .path = thisDir() ++ "/src" });
+        step.addLibraryPath(.{ .path = thisDir() ++ "/src" });
         step.rdynamic = true;
 
         try buildAndLinkDeps(step, opts);
@@ -514,7 +515,7 @@ pub fn buildCVM(b: *std.Build, opts: Options) !*std.Build.Step.Compile {
     lib.linkLibC();
 
     if (opts.optimize != .Debug) {
-        lib.dead_strip_dylibs = true;
+        //lib.dead_strip_dylibs = true;
     }
 
     var cflags = std.ArrayList([]const u8).init(b.allocator);
@@ -570,9 +571,9 @@ fn buildLib(b: *std.Build, opts: Options) !*std.Build.Step.Compile {
             .optimize = opts.optimize,
         });
     }
-    if (opts.optimize != .Debug) {
-        lib.dead_strip_dylibs = true;
-    }
+    //if (opts.optimize != .Debug) {
+    //    lib.dead_strip_dylibs = true;
+    //}
     lib.addIncludePath(.{ .path = thisDir() ++ "/src" });
 
     if (opts.target.query.cpu_arch) |cpu_arch| {

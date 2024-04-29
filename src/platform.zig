@@ -2,7 +2,6 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 /// Extracted from https://github.com/ziglibs/known-folders/blob/master/known-folders.zig
-
 pub const KnownFolder = enum {
     home,
     local_configuration,
@@ -96,7 +95,8 @@ fn getPathXdg(allocator: std.mem.Allocator, arena: *std.heap.ArenaAllocator, fol
 
     // TODO: add caching so we only need to read once in a run
     if (env_opt == null and folder_spec.env.user_dir) block: {
-        const config_dir_path = if (std.io.is_async) blk: {
+        const is_async = false; // std.io.is_async
+        const config_dir_path = if (is_async) blk: {
             var frame = arena.allocator().create(@Frame(getPathXdg)) catch break :block;
             _ = @asyncCall(frame, {}, getPathXdg, .{ arena.allocator(), arena, .local_configuration });
             break :blk (await frame) catch null orelse break :block;
@@ -120,7 +120,7 @@ fn getPathXdg(allocator: std.mem.Allocator, arena: *std.heap.ArenaAllocator, fol
                     return error.ParseError;
                 }
 
-                var subdir = line[start..end];
+                const subdir = line[start..end];
 
                 env_opt = try std.mem.concatWithSentinel(arena.allocator(), u8, &[_][]const u8{ home, subdir }, 0);
                 break;
@@ -153,7 +153,7 @@ fn getPathXdg(allocator: std.mem.Allocator, arena: *std.heap.ArenaAllocator, fol
 /// Stores how to find each known folder on windows.
 const windows_folder_spec = blk: {
     // workaround for zig eval branch quota when parsing the GUIDs
-//     @setEvalBranchQuota(10_000);
+    //     @setEvalBranchQuota(10_000);
     break :blk KnownFolderSpec(WindowsFolderSpec){
         .home = WindowsFolderSpec{ .by_guid = std.os.windows.GUID.parse("{5E6C858F-0E22-4760-9AFE-EA3317B67173}") }, // FOLDERID_Profile
         .local_configuration = WindowsFolderSpec{ .by_guid = std.os.windows.GUID.parse("{F1B32785-6FBA-4FCF-9D55-7B8E7F157091}") }, // FOLDERID_LocalAppData
@@ -217,7 +217,7 @@ const XdgFolderSpec = struct {
 
 test "query each known folders" {
     inline for (std.meta.fields(KnownFolder)) |fld| {
-        var path_or_null = try getPath(std.testing.allocator, @field(KnownFolder, fld.name));
+        const path_or_null = try getPath(std.testing.allocator, @field(KnownFolder, fld.name));
         if (path_or_null) |path| {
             // TODO: Remove later
             // std.debug.print("{s} => '{s}'\n", .{ fld.name, path });

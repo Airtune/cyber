@@ -10,11 +10,11 @@ const zErrFunc = cy.builtins.zErrFunc;
 
 const NameFunc = struct { []const u8, cy.ZHostFuncFn };
 const funcs = [_]NameFunc{
-    .{"eval",           zErrFunc(eval)},
-    .{"parse",          zErrFunc(parse)},
-    .{"parseCyon",      zErrFunc(parseCyon)},
-    .{"repl",           zErrFunc(repl)},
-    .{"toCyon",         zErrFunc(toCyon)},
+    .{ "eval", zErrFunc(eval) },
+    .{ "parse", zErrFunc(parse) },
+    .{ "parseCyon", zErrFunc(parseCyon) },
+    .{ "repl", zErrFunc(repl) },
+    .{ "toCyon", zErrFunc(toCyon) },
 };
 
 pub fn funcLoader(_: ?*c.VM, func: c.FuncInfo, out_: [*c]c.FuncResult) callconv(.C) bool {
@@ -81,7 +81,7 @@ fn genNodeValue(vm: *cy.VM, ast: cy.ast.AstView, nodeId: cy.NodeId) !cy.Value {
             try vm.mapSet(map, try vm.retainOrAllocAstring("ret"), ret);
         },
         .funcParam => {
-            var name = ast.nodeStringById(node.data.funcParam.name);
+            const name = ast.nodeStringById(node.data.funcParam.name);
             try vm.mapSet(map, try vm.retainOrAllocAstring("name"), try vm.allocString(name));
 
             const typeSpec = try genTypeSpecString(vm, ast, node.data.funcParam.typeSpec);
@@ -131,12 +131,11 @@ fn genDeclEntry(vm: *cy.VM, ast: cy.ast.AstView, decl: cy.parser.StaticDecl, sta
         .implicit_method => {
             const header = ast.node(node.data.func.header);
             name = ast.getNamePathInfo(header.data.funcHeader.name).name_path;
-            
+
             const headerv = try genNodeValue(vm, ast, node.data.func.header);
             try vm.mapSet(entry, try vm.retainOrAllocAstring("header"), headerv);
         },
-        .funcInit,
-        .func => {
+        .funcInit, .func => {
             const header = ast.node(node.data.func.header);
             name = ast.getNamePathInfo(header.data.funcHeader.name).name_path;
 
@@ -149,9 +148,7 @@ fn genDeclEntry(vm: *cy.VM, ast: cy.ast.AstView, decl: cy.parser.StaticDecl, sta
         .use_alias => {
             name = ast.nodeStringById(node.data.use_alias.name);
         },
-        .table_t,
-        .struct_t,
-        .object => {
+        .table_t, .struct_t, .object => {
             const header = ast.node(node.data.objectDecl.header);
             name = ast.nodeStringById(header.data.objectHeader.name);
         },
@@ -184,7 +181,7 @@ fn genDocComment(vm: *cy.VM, ast: cy.ast.AstView, decl: cy.parser.StaticDecl, st
             }
             state.commentIdx += 1;
             docEndIdx = state.commentIdx;
-            if (commentPos.len() < 3 or !std.mem.eql(u8, "--|", ast.src[commentPos.start..commentPos.start+3])) {
+            if (commentPos.len() < 3 or !std.mem.eql(u8, "--|", ast.src[commentPos.start .. commentPos.start + 3])) {
                 // Not a doc comment, reset.
                 docStartIdx = state.commentIdx;
                 continue;
@@ -212,9 +209,7 @@ fn genDocComment(vm: *cy.VM, ast: cy.ast.AstView, decl: cy.parser.StaticDecl, st
                         posWithModifiers = modifier.srcPos - 1;
                     }
                 },
-                .implicit_method,
-                .funcInit,
-                .func => {
+                .implicit_method, .funcInit, .func => {
                     const header = ast.node(state.node.data.func.header);
                     if (header.funcHeader_modHead() != cy.NullNode) {
                         const modifier = ast.node(header.funcHeader_modHead());
@@ -233,7 +228,7 @@ fn genDocComment(vm: *cy.VM, ast: cy.ast.AstView, decl: cy.parser.StaticDecl, st
 
             if (ast.isAdjacentLine(last.end, posWithModifiers)) {
                 for (comments[docStartIdx..docEndIdx]) |docPos| {
-                    try state.sb.appendSlice(vm.alloc, ast.src[docPos.start+3..docPos.end]);
+                    try state.sb.appendSlice(vm.alloc, ast.src[docPos.start + 3 .. docPos.end]);
                     try state.sb.append(vm.alloc, ' ');
                 }
                 const finalStr = std.mem.trim(u8, state.sb.items, " ");
@@ -446,8 +441,8 @@ pub fn allocToCyon(vm: *cy.VM, alloc: std.mem.Allocator, root: cy.Value) ![]cons
 
 pub const IReplReadLine = struct {
     ptr: *anyopaque,
-    read: *const fn(ptr: *anyopaque, prefix: [:0]const u8) anyerror![]const u8,
-    free: *const fn(ptr: *anyopaque, line: []const u8) void,
+    read: *const fn (ptr: *anyopaque, prefix: [:0]const u8) anyerror![]const u8,
+    free: *const fn (ptr: *anyopaque, line: []const u8) void,
 };
 
 fn getReplPrefix(buf: []u8, indent: u32, head: []const u8) ![:0]const u8 {
@@ -457,7 +452,7 @@ fn getReplPrefix(buf: []u8, indent: u32, head: []const u8) ![:0]const u8 {
     try w.writeAll(head);
     try w.writeByte(0);
     const slice = fbuf.getWritten();
-    return slice[0..slice.len-1 :0];
+    return slice[0 .. slice.len - 1 :0];
 }
 
 pub fn repl2(vm: *cy.VM, config: c.EvalConfig, read_line: IReplReadLine) !void {
@@ -470,7 +465,7 @@ pub fn repl2(vm: *cy.VM, config: c.EvalConfig, read_line: IReplReadLine) !void {
     const init_src =
         \\use $global
         \\
-        ;
+    ;
     var res: c.Value = undefined;
     _ = c.evalExt(@ptrCast(vm), c.toStr("repl_init"), c.toStr(init_src), config, &res);
 
@@ -589,9 +584,7 @@ fn eval(vm: *cy.VM, args: [*]const cy.Value, _: u8) anyerror!cy.Value {
     }
 
     switch (val.getTypeId()) {
-        bt.Boolean,
-        bt.Integer,
-        bt.Float => {
+        bt.Boolean, bt.Integer, bt.Float => {
             return val;
         },
         bt.String => {
@@ -601,7 +594,7 @@ fn eval(vm: *cy.VM, args: [*]const cy.Value, _: u8) anyerror!cy.Value {
         else => {
             defer ivm.release(val);
             return error.InvalidResult;
-        }
+        },
     }
 }
 
@@ -613,7 +606,7 @@ const VmReadLine = struct {
         const self: *@This() = @ptrCast(@alignCast(ptr));
         const vm_prefix = try self.vm.allocString(prefix);
         defer self.vm.release(vm_prefix);
-        const line = try self.vm.callFunc(self.read_line, &.{ vm_prefix }, .{ .from_external = false });
+        const line = try self.vm.callFunc(self.read_line, &.{vm_prefix}, .{ .from_external = false });
         if (line.isInterrupt()) {
             return error.ReadLineError;
         }
@@ -646,7 +639,7 @@ pub fn repl(vm: *cy.VM, args: [*]const cy.Value, _: u8) anyerror!cy.Value {
     config.spawn_exe = false;
 
     var read_line = VmReadLine{
-        .vm = vm, 
+        .vm = vm,
         .read_line = args[0],
     };
 

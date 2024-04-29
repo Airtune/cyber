@@ -21,7 +21,7 @@ const Src = @embedFile("std/cli.cy");
 
 const NameFunc = struct { []const u8, cy.ZHostFuncFn };
 const funcs = [_]NameFunc{
-    .{"replReadLine",     zErrFunc(replReadLine)},
+    .{ "replReadLine", zErrFunc(replReadLine) },
 };
 
 pub fn funcLoader(_: ?*c.VM, func: c.FuncInfo, out_: [*c]c.FuncResult) callconv(.C) bool {
@@ -71,9 +71,9 @@ const test_res = c.ModuleLoaderResult{
 };
 
 const stdMods = std.ComptimeStringMap(c.ModuleLoaderResult, .{
-    .{"cli", cli_res},
-    .{"os", os_res},
-    .{"test", test_res},
+    .{ "cli", cli_res },
+    .{ "os", os_res },
+    .{ "test", test_res },
 });
 
 pub export fn csSetupForCLI(vm: *c.VM) void {
@@ -150,7 +150,7 @@ pub fn loader(vm_: ?*c.VM, spec_: c.Str, out_: [*c]c.ModuleLoaderResult) callcon
             if (e == error.HandledError) {
                 return false;
             } else {
-                const msg = cy.fmt.allocFormat(alloc, "Can not load `{}`. {}", &.{v(spec), v(e)}) catch return false;
+                const msg = cy.fmt.allocFormat(alloc, "Can not load `{}`. {}", &.{ v(spec), v(e) }) catch return false;
                 defer alloc.free(msg);
                 c.reportApiError(@ptrCast(vm), c.toStr(msg));
                 return false;
@@ -158,7 +158,7 @@ pub fn loader(vm_: ?*c.VM, spec_: c.Str, out_: [*c]c.ModuleLoaderResult) callcon
         };
     } else {
         src = std.fs.cwd().readFileAlloc(alloc, spec, 1e10) catch |e| {
-            const msg = cy.fmt.allocFormat(alloc, "Can not load `{}`. {}", &.{v(spec), v(e)}) catch return false;
+            const msg = cy.fmt.allocFormat(alloc, "Can not load `{}`. {}", &.{ v(spec), v(e) }) catch return false;
             defer alloc.free(msg);
             c.reportApiError(@ptrCast(vm), c.toStr(msg));
             return false;
@@ -205,7 +205,7 @@ fn resolve(vm_: ?*c.VM, params: c.ResolverParams) callconv(.C) bool {
         if (e == error.HandledError) {
             return false;
         } else {
-            const msg = cy.fmt.allocFormat(alloc, "Resolve module `{}`, error: `{}`", &.{v(uri), v(e)}) catch return false;
+            const msg = cy.fmt.allocFormat(alloc, "Resolve module `{}`, error: `{}`", &.{ v(uri), v(e) }) catch return false;
             defer alloc.free(msg);
             c.reportApiError(@ptrCast(vm), c.toStr(msg));
             return false;
@@ -222,7 +222,7 @@ fn zResolve(vm: *cy.VM, alloc: std.mem.Allocator, chunkId: cy.ChunkId, buf: []u8
     if (std.mem.startsWith(u8, spec, "http://") or std.mem.startsWith(u8, spec, "https://")) {
         const uri = try std.Uri.parse(spec);
         if (std.mem.endsWith(u8, uri.host.?, "github.com")) {
-            if (std.mem.count(u8, uri.path, "/") == 2 and uri.path[uri.path.len-1] != '/') {
+            if (std.mem.count(u8, uri.path, "/") == 2 and uri.path[uri.path.len - 1] != '/') {
                 var fbuf = std.io.fixedBufferStream(buf);
                 const w = fbuf.writer();
 
@@ -247,7 +247,7 @@ fn zResolve(vm: *cy.VM, alloc: std.mem.Allocator, chunkId: cy.ChunkId, buf: []u8
             _ = try fbuf.write(spec);
             break :b;
         };
-        try fbuf.writer().print("{s}/{s}", .{dir, spec});
+        try fbuf.writer().print("{s}/{s}", .{ dir, spec });
     } else {
         _ = try fbuf.write(spec);
     }
@@ -256,7 +256,7 @@ fn zResolve(vm: *cy.VM, alloc: std.mem.Allocator, chunkId: cy.ChunkId, buf: []u8
     // Get canonical path.
     const absPath = std.fs.cwd().realpath(path, buf) catch |e| {
         if (e == error.FileNotFound) {
-            var msg = try cy.fmt.allocFormat(alloc, "Import path does not exist: `{}`", &.{v(path)});
+            const msg = try cy.fmt.allocFormat(alloc, "Import path does not exist: `{}`", &.{v(path)});
             if (builtin.os.tag == .windows) {
                 _ = std.mem.replaceScalar(u8, msg, '/', '\\');
             }
@@ -294,7 +294,7 @@ fn loadUrl(vm: *cy.VM, alloc: std.mem.Allocator, url: []const u8) ![]const u8 {
                 if (c.verbose()) {
                     const cachePath = try cache.allocSpecFilePath(alloc, entry);
                     defer alloc.free(cachePath);
-                    rt.logZFmt("Using cached `{s}` at `{s}`", .{url, cachePath});
+                    rt.logZFmt("Using cached `{s}` at `{s}`", .{ url, cachePath });
                 }
                 return src;
             }
@@ -329,7 +329,7 @@ fn loadUrl(vm: *cy.VM, alloc: std.mem.Allocator, url: []const u8) ![]const u8 {
         },
         else => {
             // Stop immediately.
-            const e = try cy.fmt.allocFormat(alloc, "Can not load `{}`. Response code: {}", &.{v(url), v(req.response.status)});
+            const e = try cy.fmt.allocFormat(alloc, "Can not load `{}`. Response code: {}", &.{ v(url), v(req.response.status) });
             defer alloc.free(e);
             c.reportApiError(@ptrCast(vm), c.toStr(e));
             return error.HandledError;
@@ -376,7 +376,7 @@ pub fn replReadLine(vm: *cy.VM, args: [*]const cy.Value, _: u8) anyerror!cy.Valu
 pub const LnReadLine = struct {
     pub fn read(ptr: *anyopaque, prefix: [:0]const u8) anyerror![]const u8 {
         _ = ptr;
-        var linez = ln.linenoise(prefix);
+        const linez = ln.linenoise(prefix);
         if (linez == null) {
             return error.EndOfInput;
         }

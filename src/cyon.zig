@@ -31,7 +31,7 @@ pub const EncodeListContext = struct {
         try self.indent();
         _ = try self.writer.write("]");
     }
-    
+
     pub fn encodeTable(self: *EncodeListContext, val: anytype, encode_table: fn (*EncodeTableContext, @TypeOf(val)) anyerror!void) !void {
         _ = try self.writer.write("{\n");
 
@@ -188,7 +188,7 @@ pub const EncodeTableContext = struct {
 
     pub fn encodeTable2(self: *EncodeTableContext, key: []const u8, val: anytype, encode_table: fn (*EncodeTableContext, anytype) anyerror!void) !void {
         try self.indent();
-        _ = try self.writer.print("{s}: ", .{ key });
+        _ = try self.writer.print("{s}: ", .{key});
 
         _ = try self.writer.write("{\n");
 
@@ -285,8 +285,7 @@ pub const EncodeTableContext = struct {
     fn encodeValue(self: *EncodeTableContext, val: anytype) !void {
         const T = @TypeOf(val);
         switch (T) {
-            bool,
-            u32 => {
+            bool, u32 => {
                 _ = try self.writer.print("{}", .{val});
             },
             else => {
@@ -414,12 +413,7 @@ pub const DecodeTableIR = struct {
             const entry = ast.node(entry_id);
             const key = ast.node(entry.keyValue_key());
             switch (key.type()) {
-                .binLit,
-                .octLit,
-                .hexLit,
-                .decLit,
-                .floatLit,
-                .ident => {
+                .binLit, .octLit, .hexLit, .decLit, .floatLit, .ident => {
                     const str = ast.nodeString(key);
                     try new.map.put(alloc, str, entry.keyValue_value());
                 },
@@ -445,7 +439,7 @@ pub const DecodeTableIR = struct {
             .exprId = self.map.get(key).?,
         };
     }
-    
+
     pub fn allocString(self: DecodeTableIR, key: []const u8) ![]const u8 {
         if (self.map.get(key)) |val_id| {
             const val_n = self.ast.node(val_id);
@@ -565,7 +559,7 @@ pub fn decode(alloc: std.mem.Allocator, parser: *Parser, cyon: []const u8) !Deco
     }
 
     return DecodeValueIR{
-        .alloc = alloc, 
+        .alloc = alloc,
         .ast = res.ast,
         .exprId = first_stmt.data.exprStmt.child,
     };
@@ -590,12 +584,8 @@ pub const DecodeValueIR = struct {
         switch (node.type()) {
             .arrayLit => return .list,
             .recordLit => return .map,
-            .raw_string_lit,
-            .stringLit => return .string,
-            .hexLit,
-            .binLit,
-            .octLit,
-            .decLit => return .integer,
+            .raw_string_lit, .stringLit => return .string,
+            .hexLit, .binLit, .octLit, .decLit => return .integer,
             .floatLit => return .float,
             .trueLit => return .bool,
             .falseLit => return .bool,
@@ -662,7 +652,7 @@ const TestTableItem = struct {
 };
 
 test "encode" {
-    var root = TestRoot{
+    const root = TestRoot{
         .name = "project",
         .list = &.{
             .{ .field = 1 },
@@ -764,7 +754,7 @@ test "decodeTable" {
     defer parser.deinit();
 
     var root: TestRoot = undefined;
-    try decodeTable(t.alloc, &parser, {}, &root, S.decodeRoot, 
+    try decodeTable(t.alloc, &parser, {}, &root, S.decodeRoot,
         \\{
         \\    name: 'project',
         \\    list: [

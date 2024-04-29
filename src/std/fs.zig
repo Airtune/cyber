@@ -96,7 +96,7 @@ pub fn dirIteratorFinalizer(_: ?*cc.VM, obj: ?*anyopaque) callconv(.C) void {
         var dir: *DirIterator = @ptrCast(@alignCast(obj));
         if (dir.recursive) {
             const walker = cy.ptrAlignCast(*std.fs.IterableDir.Walker, &dir.inner.walker);
-            walker.deinit();   
+            walker.deinit();
         }
     }
 }
@@ -307,7 +307,7 @@ pub fn fileWrite(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
         return rt.prepThrowError(vm, .Closed);
     }
 
-    var buf = try vm.getOrBufPrintValueRawStr(&cy.tempBuf, args[1]);
+    const buf = try vm.getOrBufPrintValueRawStr(&cy.tempBuf, args[1]);
     const file = fileo.getStdFile();
     const numWritten = try file.write(buf);
     return Value.initInt(@intCast(numWritten));
@@ -364,7 +364,7 @@ pub fn fileReadAll(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
     tempBuf.ensureTotalCapacity(vm.alloc, MinReadBufSize) catch cy.fatal();
 
     while (true) {
-        const buf = tempBuf.buf[tempBuf.len .. tempBuf.buf.len];
+        const buf = tempBuf.buf[tempBuf.len..tempBuf.buf.len];
         const numRead = try file.readAll(buf);
         tempBuf.len += numRead;
         if (numRead < buf.len) {
@@ -439,7 +439,7 @@ pub fn fileNext(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
         const readBuf = fileo.readBuf[0..fileo.readBufCap];
         if (cy.string.getLineEnd(readBuf[fileo.curPos..fileo.readBufEnd])) |end| {
             // Found new line.
-            const line = try vm.allocArray(readBuf[fileo.curPos..fileo.curPos+end]);
+            const line = try vm.allocArray(readBuf[fileo.curPos .. fileo.curPos + end]);
 
             // Advance pos.
             fileo.curPos += @intCast(end);

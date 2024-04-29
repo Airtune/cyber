@@ -120,13 +120,11 @@ pub fn startsWith(_: *cy.VM, args: [*]const Value, _: u8) Value {
     return Value.initBool(std.mem.startsWith(u8, str, needle));
 }
 
-
 pub fn endsWith(_: *cy.VM, args: [*]const Value, _: u8) Value {
     const str = args[0].asHeapObject().string.getSlice();
     const needle = args[1].asString();
     return Value.initBool(std.mem.endsWith(u8, str, needle));
 }
-
 
 pub fn isAscii(_: *cy.VM, args: [*]const Value, _: u8) Value {
     const obj = args[0].asHeapObject();
@@ -148,7 +146,7 @@ pub fn findAnyRune(vm: *cy.VM, args: [*]const Value, _: u8) Value {
     if (set.len > 0) {
         if (stype.isAstring()) {
             if (setIsAscii) {
-                if (@call(.never_inline, string.indexOfAsciiSet, .{str, set})) |idx| {
+                if (@call(.never_inline, string.indexOfAsciiSet, .{ str, set })) |idx| {
                     return intSome(vm, @intCast(idx)) catch cy.fatal();
                 }
             } else {
@@ -204,7 +202,7 @@ pub fn findRune(vm: *cy.VM, args: [*]const Value, _: u8) Value {
     const obj = args[0].asHeapObject();
     const str = obj.string.getSlice();
     const needle = args[1].asInteger();
-    const stype = obj.string.getType(); 
+    const stype = obj.string.getType();
 
     if (needle > 0) {
         const code: u21 = @intCast(needle);
@@ -324,7 +322,7 @@ pub fn runeAt(_: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
         if (uidx + rune_len > str.len) {
             return Value.initInt(@intCast(std.unicode.replacement_character));
         }
-        const rune = std.unicode.utf8Decode(str[uidx..uidx+rune_len]) catch {
+        const rune = std.unicode.utf8Decode(str[uidx .. uidx + rune_len]) catch {
             return Value.initInt(@intCast(std.unicode.replacement_character));
         };
         return Value.initInt(@intCast(rune));
@@ -335,7 +333,7 @@ pub fn sliceAt(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
     const obj = args[0].asHeapObject();
     const str = obj.string.getSlice();
     const stype = obj.string.getType();
-    var idx = args[1].asInteger();
+    const idx = args[1].asInteger();
 
     if (idx < 0 or idx >= str.len) {
         return error.OutOfBounds;
@@ -343,7 +341,7 @@ pub fn sliceAt(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
     const uidx: u32 = @intCast(idx);
     if (stype.isAstring()) {
         // TODO: return slice.
-        return vm.retainOrAllocAstring(str[uidx..uidx + 1]) catch fatal();
+        return vm.retainOrAllocAstring(str[uidx .. uidx + 1]) catch fatal();
     } else {
         var bad_byte: bool = undefined;
         const slice = string.runeSliceAt(str, uidx, &bad_byte);
@@ -377,7 +375,7 @@ pub fn trim(vm: *cy.VM, args: [*]const Value, _: u8) Value {
         .ends => res = std.mem.trim(u8, str, trimRunes),
         else => {
             return rt.prepThrowError(vm, .InvalidArgument);
-        }
+        },
     }
 
     vm.retainObject(obj);
@@ -470,7 +468,7 @@ pub fn repeat(vm: *cy.VM, args: [*]const Value, _: u8) Value {
         return rt.prepThrowError(vm, .InvalidArgument);
     }
 
-    var un: u32 = @intCast(n);
+    const un: u32 = @intCast(n);
     const len = un * str.len;
     if (un > 1 and len > 0) {
         var new: *cy.HeapObject = undefined;
@@ -488,7 +486,7 @@ pub fn repeat(vm: *cy.VM, args: [*]const Value, _: u8) Value {
         var i: u32 = 0;
         var dst: u32 = 0;
         while (i < un) : (i += 1) {
-            std.mem.copy(u8, buf[dst..dst + str.len], str);
+            std.mem.copy(u8, buf[dst .. dst + str.len], str);
             dst += @intCast(str.len);
         }
 
@@ -536,7 +534,7 @@ pub fn stringCall(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
     const val = args[0];
     if (val.isString()) {
         vm.retain(val);
-        return val; 
+        return val;
     } else {
         const str = try vm.getOrBufPrintValueStr(&cy.tempBuf, val);
         return vm.retainOrAllocAstring(str);

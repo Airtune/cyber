@@ -64,7 +64,7 @@ pub const FFI = struct {
             const elem = try vm.getField(spec, elemField);
             const child = try vm.alloc.create(CType);
             child.* = try self.toElemCType(vm, elem);
-            const res = CType{ .arr = .{ .child = child, .n = n }};
+            const res = CType{ .arr = .{ .child = child, .n = n } };
             try self.ensureArray(vm.alloc, res);
             return res;
         } else {
@@ -91,7 +91,7 @@ pub const FFI = struct {
 
     fn ensureArray(self: *FFI, alloc: std.mem.Allocator, arrT: CType) !void {
         const elemName = try fmtBaseTypeName(&cy.tempBuf, arrT.arr.child.*);
-        const key = try std.fmt.allocPrint(alloc, "{s}[{}]", .{elemName, arrT.arr.n});
+        const key = try std.fmt.allocPrint(alloc, "{s}[{}]", .{ elemName, arrT.arr.n });
         if (!self.carrayMap.contains(key)) {
             const id = self.carrays.items.len;
             try self.carrays.append(alloc, arrT);
@@ -116,7 +116,7 @@ pub fn allocFFI(vm: *cy.VM) !Value {
 }
 
 pub fn ffiGetChildren(_: ?*c.VM, obj: ?*anyopaque) callconv(.C) c.ValueSlice {
-    var ffi: *FFI = @ptrCast(@alignCast(obj));
+    const ffi: *FFI = @ptrCast(@alignCast(obj));
     return Value.toSliceC(ffi.managed.items);
 }
 
@@ -207,12 +207,12 @@ const CGen = struct {
             const elemName = try fmtBaseTypeName(&cy.tempBuf, carr.arr.child.*);
 
             // to{elem}Array{n}
-            try w.print("void to{s}Array{}(UserVM* vm, uint64_t val, ", .{elemName, carr.arr.n});
+            try w.print("void to{s}Array{}(UserVM* vm, uint64_t val, ", .{ elemName, carr.arr.n });
             try writeCType(w, carr.arr.child.*);
             try w.print("* out);\n", .{});
 
             // from{elem}Array{n}.
-            try w.print("uint64_t from{s}Array{}(UserVM* vm, ", .{elemName, carr.arr.n});
+            try w.print("uint64_t from{s}Array{}(UserVM* vm, ", .{ elemName, carr.arr.n });
             try writeCType(w, carr.arr.child.*);
             try w.print(" arr[{}]);\n", .{carr.arr.n});
         }
@@ -223,14 +223,16 @@ const CGen = struct {
         const ffi = self.ffi;
         for (ffi.cstructs.items) |cstruct| {
             // Generate to C struct conv.
-            try w.print("Struct{} toStruct{}(UserVM* vm, uint64_t val) {{\n", .{cstruct.type, cstruct.type});
+            try w.print("Struct{} toStruct{}(UserVM* vm, uint64_t val) {{\n", .{ cstruct.type, cstruct.type });
             // Get pointer to first cyber object field.
             try w.print("  uint64_t* args = (uint64_t*)(val & ~PointerMask) + 1;\n", .{});
-            try w.print("  Struct{} res;\n", .{cstruct.type, });
+            try w.print("  Struct{} res;\n", .{
+                cstruct.type,
+            });
             for (cstruct.fields, 0..) |field, i| {
                 if (field == .arr) {
                     const elemName = try fmtBaseTypeName(&cy.tempBuf, field.arr.child.*);
-                    try w.print("  to{s}Array{}(vm, args[{}], &res.f{}[0]);", .{elemName, field.arr.n, i, i});
+                    try w.print("  to{s}Array{}(vm, args[{}], &res.f{}[0]);", .{ elemName, field.arr.n, i, i });
                 } else {
                     try w.print("  res.f{} = ", .{i});
                     const val = try std.fmt.bufPrint(&cy.tempBuf, "args[{}]", .{i});
@@ -242,7 +244,7 @@ const CGen = struct {
             try w.print("}}\n", .{});
 
             // Generate from C struct conv.
-            try w.print("uint64_t fromStruct{}(UserVM* vm, Struct{} val) {{\n", .{cstruct.type, cstruct.type});
+            try w.print("uint64_t fromStruct{}(UserVM* vm, Struct{} val) {{\n", .{ cstruct.type, cstruct.type });
             try w.print("  uint64_t obj = icyAllocObject(vm, {});\n", .{cstruct.type});
             try w.print("  uint64_t* args = (uint64_t*)(obj & ~PointerMask) + 1;\n", .{});
             var buf: [8]u8 = undefined;
@@ -267,7 +269,7 @@ const CGen = struct {
             const elemName = try fmtBaseTypeName(&cy.tempBuf, elem);
 
             // Generate to{elem}Array{n}. Writes to ptr since arrays can't be returned in C.
-            try w.print("void to{s}Array{}(UserVM* vm, uint64_t val, ", .{elemName, n});
+            try w.print("void to{s}Array{}(UserVM* vm, uint64_t val, ", .{ elemName, n });
             try writeCType(w, elem);
             try w.print("* out) {{\n", .{});
             try w.print("  uint64_t* args = (uint64_t*)*((uint64_t*)(val & ~PointerMask) + 1);\n", .{});
@@ -280,7 +282,7 @@ const CGen = struct {
             try w.print("}}\n", .{});
 
             // Generate from{elem}Array{n}.
-            try w.print("uint64_t from{s}Array{}(UserVM* vm, ", .{elemName, n});
+            try w.print("uint64_t from{s}Array{}(UserVM* vm, ", .{ elemName, n });
             try writeCType(w, elem);
             try w.print(" arr[{}]) {{\n", .{n});
 
@@ -307,7 +309,7 @@ const CGen = struct {
         // Emit extern declaration.
         try w.writeAll("extern ");
         try writeCType(w, funcInfo.ret);
-        try w.print(" {s}(", .{ sym });
+        try w.print(" {s}(", .{sym});
         if (params.len > 0) {
             try writeCType(w, params[0]);
             if (params.len > 1) {
@@ -338,7 +340,7 @@ const CGen = struct {
                     try writeNamedCType(w, param, cval);
                     try w.print(";\n", .{});
 
-                    try w.print("  to{s}Array{}(vm, args[{}], &arr{}[0]);", .{elemName, param.arr.n, argIdx, argIdx});
+                    try w.print("  to{s}Array{}(vm, args[{}], &arr{}[0]);", .{ elemName, param.arr.n, argIdx, argIdx });
                 } else {
                     continue;
                 }
@@ -347,7 +349,7 @@ const CGen = struct {
 
         // Gen call.
         if (ret == .object) {
-            try w.print("  Struct{} res = {s}(", .{ret.object, sym});
+            try w.print("  Struct{} res = {s}(", .{ ret.object, sym });
         } else {
             switch (ret.sym) {
                 .char => {
@@ -395,7 +397,7 @@ const CGen = struct {
                 .bool => {
                     try w.print("  bool res = {s}(", .{sym});
                 },
-                else => cy.panicFmt("Unsupported return type: {s}", .{ @tagName(ret.sym) }),
+                else => cy.panicFmt("Unsupported return type: {s}", .{@tagName(ret.sym)}),
             }
         }
 
@@ -525,7 +527,7 @@ fn fmtBaseTypeName(buf: []u8, ctype: CType) ![]const u8 {
                 .charPtr => "CharPtr",
                 .voidPtr => "VoidPtr",
                 else => {
-                    std.debug.print("Unsupported arg type: {s}\n", .{ @tagName(sym) });
+                    std.debug.print("Unsupported arg type: {s}\n", .{@tagName(sym)});
                     return error.InvalidArgument;
                 },
             };
@@ -546,11 +548,11 @@ fn writeCType(w: anytype, ctype: CType) !void {
         },
         .arr => |arr| {
             try writeCType(w, arr.child.*);
-            try w.print("[{}]", .{ arr.n });
+            try w.print("[{}]", .{arr.n});
         },
         .sym => |sym| {
             try writeCTypeForCSym(w, sym);
-        }
+        },
     }
 }
 
@@ -568,15 +570,15 @@ fn writeNamedCType(w: anytype, ctype: CType, name: []const u8) !void {
 fn writeToCValue(w: anytype, val: []const u8, ctype: CType) !void {
     switch (ctype) {
         .object => |objectT| {
-            try w.print("toStruct{}(vm, {s})", .{objectT, val});
+            try w.print("toStruct{}(vm, {s})", .{ objectT, val });
         },
         .sym => |sym| {
             try writeToCValueForSym(w, val, sym);
         },
         else => {
-            std.debug.print("Unsupported arg type: {s}\n", .{ @tagName(ctype) });
+            std.debug.print("Unsupported arg type: {s}\n", .{@tagName(ctype)});
             return error.InvalidArgument;
-        }
+        },
     }
 }
 
@@ -629,9 +631,9 @@ fn writeToCValueForSym(w: anytype, val: []const u8, sym: Symbol) !void {
             try w.print("_cyGetFuncPtr({s})", .{val});
         },
         else => {
-            std.debug.print("Unsupported arg type: {s}\n", .{ @tagName(sym) });
+            std.debug.print("Unsupported arg type: {s}\n", .{@tagName(sym)});
             return error.InvalidArgument;
-        }
+        },
     }
 }
 
@@ -642,7 +644,7 @@ fn writeToCyValue(w: anytype, cval: []const u8, ctype: CType) !void {
         },
         .arr => |arr| {
             const elemName = try fmtBaseTypeName(&cy.tempBuf, arr.child.*);
-            try w.print("from{s}Array{}(vm, {s})", .{elemName, arr.n, cval});
+            try w.print("from{s}Array{}(vm, {s})", .{ elemName, arr.n, cval });
         },
         .sym => |sym| {
             try writeToCyValueForSym(w, cval, sym);
@@ -652,21 +654,13 @@ fn writeToCyValue(w: anytype, cval: []const u8, ctype: CType) !void {
 
 fn writeToCyValueForSym(w: anytype, cval: []const u8, ctype: Symbol) !void {
     switch (ctype) {
-        .char,
-        .short,
-        .int,
-        .long,
-        .ulong,
-        .usize => {
+        .char, .short, .int, .long, .ulong, .usize => {
             try w.print("(0x7FFE000000000000 | ({s} & 0xFFFFFFFFFFFF))", .{cval});
         },
-        .uchar,
-        .ushort,
-        .uint => {
+        .uchar, .ushort, .uint => {
             try w.print("(0x7FFE000000000000 | {s})", .{cval});
         },
-        .float,
-        .double => {
+        .float, .double => {
             // Assumes cval is already converted to double.
             try w.print("*(uint64_t*)&{s}", .{cval});
         },
@@ -683,8 +677,8 @@ fn writeToCyValueForSym(w: anytype, cval: []const u8, ctype: Symbol) !void {
             try w.print("({s} == 1) ? 0x7FFC000100000001 : 0x7FFC000100000000", .{cval});
         },
         else => {
-            cy.panicFmt("Unsupported arg type: {s}", .{ @tagName(ctype) });
-        }
+            cy.panicFmt("Unsupported arg type: {s}", .{@tagName(ctype)});
+        },
     }
 }
 
@@ -707,7 +701,7 @@ fn writeCTypeForCSym(w: anytype, ctype: Symbol) !void {
         .funcPtr => "void*",
         .void => "void",
         else => {
-            std.debug.print("Unsupported arg type: {s}\n", .{ @tagName(ctype) });
+            std.debug.print("Unsupported arg type: {s}\n", .{@tagName(ctype)});
             return error.InvalidArgument;
         },
     };
@@ -732,9 +726,9 @@ fn sizeOf(ctype: Symbol) !usize {
         .voidPtr => 8,
         .funcPtr => 8,
         else => {
-            std.debug.print("Unsupported type: {s}\n", .{ @tagName(ctype) });
+            std.debug.print("Unsupported type: {s}\n", .{@tagName(ctype)});
             return error.InvalidArgument;
-        }
+        },
     };
 }
 
@@ -758,7 +752,8 @@ fn toCyType(ctype: CType, forRet: bool) !types.TypeId {
                 .double => return bt.Float,
                 .funcPtr, // pointer? or ExternFunc.
                 .charPtr,
-                .voidPtr => {
+                .voidPtr,
+                => {
                     // TODO: Once optional types are implemented, this would be an optional pointer.
                     if (!forRet) {
                         return bt.Any;
@@ -768,11 +763,11 @@ fn toCyType(ctype: CType, forRet: bool) !types.TypeId {
                 },
                 .void => return bt.Void,
                 else => {
-                    std.debug.print("Unsupported val type: {s}\n", .{ @tagName(sym) });
+                    std.debug.print("Unsupported val type: {s}\n", .{@tagName(sym)});
                     return error.InvalidArgument;
-                }
+                },
             }
-        }
+        },
     }
 }
 
@@ -867,7 +862,7 @@ pub fn ffiBindLib(vm: *cy.VM, args: [*]const Value, config: BindLibConfig) !Valu
         } else {
             try w.print("  uint64_t ptr = *((uint64_t*)(args[0] & ~PointerMask) + 1);\n", .{});
         }
-        try w.print("  uint64_t res = fromStruct{}(vm, *(Struct{}*)ptr);\n", .{cstruct.type, cstruct.type});
+        try w.print("  uint64_t res = fromStruct{}(vm, *(Struct{}*)ptr);\n", .{ cstruct.type, cstruct.type });
         try w.print("  return res;\n", .{});
         try w.print("}}\n", .{});
     }
@@ -934,8 +929,7 @@ pub fn ffiBindLib(vm: *cy.VM, args: [*]const Value, config: BindLibConfig) !Valu
             const symKey = try vm.retainOrAllocAstring(cfunc.namez);
             const func = cy.ptrAlignCast(cy.ZHostFuncFn, funcPtr);
             const funcSig = vm.compiler.sema.getFuncSig(cfunc.funcSigId);
-            const funcVal = try cy.heap.allocHostFunc(vm, func, @intCast(cfunc.params.len),
-                cfunc.funcSigId, cyState, funcSig.reqCallTypeCheck);
+            const funcVal = try cy.heap.allocHostFunc(vm, func, @intCast(cfunc.params.len), cfunc.funcSigId, cyState, funcSig.reqCallTypeCheck);
             try table.asHeapObject().table.set(vm, symKey, funcVal);
             vm.release(symKey);
             vm.release(funcVal);
@@ -944,7 +938,7 @@ pub fn ffiBindLib(vm: *cy.VM, args: [*]const Value, config: BindLibConfig) !Valu
         cy.arc.retainInc(vm, cyState, @intCast(numGenFuncs + ffi.cstructs.items.len - 1));
         for (ffi.cstructs.items) |cstruct| {
             const typeName = vm.getTypeName(cstruct.type);
-            const symGen = try std.fmt.allocPrint(vm.alloc, "cyPtrTo{s}{u}", .{typeName, 0});
+            const symGen = try std.fmt.allocPrint(vm.alloc, "cyPtrTo{s}{u}", .{ typeName, 0 });
             defer vm.alloc.free(symGen);
             const funcPtr = tcc.tcc_get_symbol(state, symGen.ptr) orelse {
                 cy.panic("Failed to get symbol.");
@@ -964,7 +958,7 @@ pub fn ffiBindLib(vm: *cy.VM, args: [*]const Value, config: BindLibConfig) !Valu
     } else {
         // Create anonymous struct with binded C-functions as methods.
         const osSym = vm.compiler.chunk_map.get("os").?.sym;
-        const sid = try vm.addAnonymousStruct(@ptrCast(osSym), "BindLib", os.nextUniqId, &.{ "tcc" });
+        const sid = try vm.addAnonymousStruct(@ptrCast(osSym), "BindLib", os.nextUniqId, &.{"tcc"});
         os.nextUniqId += 1;
         const tccField = try vm.ensureFieldSym("tcc");
         try vm.addFieldSym(sid, tccField, 0, bt.Any);
@@ -984,11 +978,11 @@ pub fn ffiBindLib(vm: *cy.VM, args: [*]const Value, config: BindLibConfig) !Valu
             const func_sym = rt.FuncSymbol.initHostFunc(@ptrCast(func), func_sig.reqCallTypeCheck, true, func_sig.numParams(), cfunc.funcSigId);
             const func_id = try vm.addFunc(cfunc.namez, cfunc.funcSigId, func_sym);
             const method = try vm.ensureMethod(cfunc.namez);
-            try @call(.never_inline, cy.VM.addMethod, .{vm, sid, method, func_id, false});
+            try @call(.never_inline, cy.VM.addMethod, .{ vm, sid, method, func_id, false });
         }
         for (ffi.cstructs.items) |cstruct| {
             const typeName = vm.getTypeName(cstruct.type);
-            const symGen = try std.fmt.allocPrint(vm.alloc, "cyPtrTo{s}{u}", .{typeName, 0});
+            const symGen = try std.fmt.allocPrint(vm.alloc, "cyPtrTo{s}{u}", .{ typeName, 0 });
             defer vm.alloc.free(symGen);
             const funcPtr = tcc.tcc_get_symbol(state, symGen.ptr) orelse {
                 cy.panic("Failed to get symbol.");
@@ -1006,7 +1000,7 @@ pub fn ffiBindLib(vm: *cy.VM, args: [*]const Value, config: BindLibConfig) !Valu
             const func_id = try vm.addFunc(managed_name, funcSigId, func_sym);
 
             const method = try vm.ensureMethod(managed_name);
-            try @call(.never_inline, cy.VM.addMethod, .{vm, sid, method, func_id, false});
+            try @call(.never_inline, cy.VM.addMethod, .{ vm, sid, method, func_id, false });
         }
         success = true;
         return try vm.allocObjectSmall(sid, &.{cyState});
@@ -1027,11 +1021,9 @@ fn dlopen(path: []const u8) !std.DynLib {
         const path_c = try std.os.toPosixPath(path);
         // Place the lookup scope of the symbols in this library ahead of the global scope.
         const RTLD_DEEPBIND = 0x00008;
-        return std.DynLib{
-            .handle = std.os.system.dlopen(&path_c, std.os.system.RTLD.LAZY | RTLD_DEEPBIND) orelse {
-                return error.FileNotFound;
-            }
-        };
+        return std.DynLib{ .handle = std.os.system.dlopen(&path_c, std.os.system.RTLD.LAZY | RTLD_DEEPBIND) orelse {
+            return error.FileNotFound;
+        } };
     } else {
         return std.DynLib.open(path);
     }
@@ -1149,7 +1141,7 @@ pub fn ffiBindCallback(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
     try w.print("  UserVM* vm = (UserVM*)0x{X};\n", .{@intFromPtr(vm)});
     try w.print("  int64_t args[{}];\n", .{params.len});
     for (params, 0..) |param, i| {
-        var ctype = try ffi.toCType(vm, param);
+        const ctype = try ffi.toCType(vm, param);
         try w.print("  args[{}] = ", .{i});
         const cval = try std.fmt.bufPrint(&cy.tempBuf, "p{}", .{i});
         try writeToCyValue(w, cval, ctype);
@@ -1239,7 +1231,7 @@ pub fn ffiBindObjPtr(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
     // Retain and managed by FFI context.
     vm.retainObject(obj);
     try ffi.managed.append(vm.alloc, args[1]);
-    
+
     return res;
 }
 

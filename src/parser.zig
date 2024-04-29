@@ -62,8 +62,8 @@ pub const Parser = struct {
     collectCtNodes: bool,
     ctNodePatchIdx: u32,
 
-    reportFn: *const fn(*anyopaque, format: []const u8, args: []const cy.fmt.FmtValue, pos: u32) anyerror,
-    tokenizerReportFn: *const fn(*anyopaque, format: []const u8, args: []const cy.fmt.FmtValue, pos: u32) anyerror!void,
+    reportFn: *const fn (*anyopaque, format: []const u8, args: []const cy.fmt.FmtValue, pos: u32) anyerror,
+    tokenizerReportFn: *const fn (*anyopaque, format: []const u8, args: []const cy.fmt.FmtValue, pos: u32) anyerror!void,
     ctx: *anyopaque,
 
     has_error: bool,
@@ -192,7 +192,7 @@ pub const Parser = struct {
         const indent = (try self.consumeIndentBeforeStmt()) orelse {
             self.ast.setNodeData(root_id, .{ .root = .{
                 .bodyHead = cy.NullNode,
-            }});
+            } });
             return root_id;
         };
         if (indent != 0) {
@@ -213,7 +213,7 @@ pub const Parser = struct {
 
         self.ast.setNodeData(root_id, .{ .root = .{
             .bodyHead = res.first,
-        }});
+        } });
         return root_id;
     }
 
@@ -282,7 +282,7 @@ pub const Parser = struct {
         self.cur_indent = reqIndent;
         defer self.cur_indent = prevIndent;
 
-        var first = try self.parseStatement(config);
+        const first = try self.parseStatement(config);
         var last = first;
 
         // Parse body statements until indentation goes back to at least the previous indent.
@@ -331,7 +331,7 @@ pub const Parser = struct {
         const start = self.next_pos;
         // Assumes first token is `=>`.
         self.advance();
-        
+
         const id = try self.pushNode(.lambda_expr, start);
 
         // Parse body expr.
@@ -346,14 +346,14 @@ pub const Parser = struct {
         self.ast.setNodeData(header, .{ .funcHeader = .{
             .name = cy.NullNode,
             .paramHead = params.head,
-        }});
+        } });
 
         self.ast.setNodeData(id, .{ .func = .{
             .header = @intCast(header),
             .bodyHead = @intCast(expr),
             .sig_t = .infer,
             .hidden = false,
-        }});
+        } });
         return id;
     }
 
@@ -361,7 +361,7 @@ pub const Parser = struct {
         const start = self.next_pos;
         // Assumes first token is `:`.
         self.advance();
-        
+
         const id = try self.pushNode(.lambda_multi, start);
 
         try self.pushBlock();
@@ -373,14 +373,14 @@ pub const Parser = struct {
         self.ast.setNodeData(header, .{ .funcHeader = .{
             .name = cy.NullNode,
             .paramHead = params.head,
-        }});
+        } });
 
         self.ast.setNodeData(id, .{ .func = .{
             .header = @intCast(header),
             .bodyHead = @intCast(res.first),
             .sig_t = .infer,
             .hidden = false,
-        }});
+        } });
         return id;
     }
 
@@ -408,14 +408,14 @@ pub const Parser = struct {
             self.ast.setNodeData(header, .{ .funcHeader = .{
                 .name = cy.NullNode,
                 .paramHead = params.head,
-            }});
-            
+            } });
+
             self.ast.setNodeData(id, .{ .func = .{
                 .header = @intCast(header),
                 .bodyHead = @intCast(expr),
                 .sig_t = .func,
                 .hidden = false,
-            }});
+            } });
             return id;
         }
 
@@ -435,14 +435,14 @@ pub const Parser = struct {
         self.ast.setNodeData(header, .{ .funcHeader = .{
             .name = cy.NullNode,
             .paramHead = params.head,
-        }});
+        } });
 
         self.ast.setNodeData(id, .{ .func = .{
             .header = @intCast(header),
             .bodyHead = @intCast(res.first),
             .sig_t = .func,
             .hidden = false,
-        }});
+        } });
         return id;
     }
 
@@ -466,7 +466,7 @@ pub const Parser = struct {
         self.ast.setNodeData(param, .{ .funcParam = .{
             .name = ident,
             .typeSpec = cy.NullNode,
-        }});
+        } });
         return param;
     }
 
@@ -488,14 +488,14 @@ pub const Parser = struct {
         self.advance();
 
         var num_fields: u32 = 1;
-        var first = field;
+        const first = field;
         var last = field;
         while (true) {
             self.consumeWhitespaceTokens();
             if (self.peek().tag() == .comma) {
                 self.advance();
                 self.consumeWhitespaceTokens();
-            } else if(self.peek().tag() == .right_brace) {
+            } else if (self.peek().tag() == .right_brace) {
                 self.advance();
                 break;
             } else {
@@ -538,7 +538,7 @@ pub const Parser = struct {
         if (token.tag() != .ident) {
             return self.reportError("Unexpected token in function param list.", &.{});
         }
-    
+
         // Parse params.
         var start = self.next_pos;
         var name = try self.pushSpanNode(.ident, start);
@@ -560,7 +560,7 @@ pub const Parser = struct {
         self.ast.setNodeData(paramHead, .{ .funcParam = .{
             .name = name,
             .typeSpec = type_spec,
-        }});
+        } });
 
         var numParams: u32 = 1;
         var last = paramHead;
@@ -596,7 +596,7 @@ pub const Parser = struct {
             self.ast.setNodeData(param, .{ .funcParam = .{
                 .name = name,
                 .typeSpec = type_spec,
-            }});
+            } });
             self.ast.setNextNode(last, param);
             numParams += 1;
             last = param;
@@ -615,13 +615,7 @@ pub const Parser = struct {
         const start = self.next_pos;
         var token = self.peek();
         switch (token.tag()) {
-            .void_k,
-            .struct_k,
-            .enum_k,
-            .type_k,
-            .error_k,
-            .none_k,
-            .ident => {
+            .void_k, .struct_k, .enum_k, .type_k, .error_k, .none_k, .ident => {
                 self.advance();
                 return try self.pushSpanNode(.ident, start);
             },
@@ -646,7 +640,7 @@ pub const Parser = struct {
         if (token.tag() != .dot) {
             return first;
         }
-        
+
         var last = first;
         while (token.tag() == .dot) {
             self.advance();
@@ -685,7 +679,7 @@ pub const Parser = struct {
         self.ast.setNodeData(field, .{ .enumMember = .{
             .name = name,
             .typeSpec = typeSpec,
-        }});
+        } });
         return field;
     }
 
@@ -714,7 +708,7 @@ pub const Parser = struct {
             .name = name,
             .typeSpec = @intCast(typeSpec),
             .hidden = hidden,
-        }});
+        } });
         return field;
     }
 
@@ -751,7 +745,7 @@ pub const Parser = struct {
                 .numParams = @intCast(params.len),
                 .typeDecl = @intCast(decl),
                 .hidden = hidden,
-            }});
+            } });
 
             try self.staticDecls.append(self.alloc, .{
                 .declT = .typeTemplate,
@@ -759,7 +753,7 @@ pub const Parser = struct {
                 .data = .{ .typeTemplate = .{
                     .ctNodeStart = @intCast(ctNodeStart),
                     .ctNodeEnd = @intCast(ctNodeEnd),
-                }},
+                } },
             });
             return id;
         } else {
@@ -824,9 +818,7 @@ pub const Parser = struct {
                 return decl;
             },
             // `object` is optional.
-            .object_k,
-            .new_line,
-            .colon => {
+            .object_k, .new_line, .colon => {
                 var decl_idx: usize = undefined;
                 if (append_decl) {
                     decl_idx = self.staticDecls.items.len;
@@ -872,7 +864,7 @@ pub const Parser = struct {
                     self.staticDecls.items[decl_idx].nodeId = decl;
                 }
                 return decl;
-            }
+            },
         }
     }
 
@@ -896,12 +888,7 @@ pub const Parser = struct {
                     return self.reportError("Unnamed type is not allowed in this context.", &.{});
                 }
             },
-            .question,
-            .pound,
-            .void_k,
-            .type_k,
-            .error_k,
-            .ident => {
+            .question, .pound, .void_k, .type_k, .error_k, .ident => {
                 return try self.parseTermExpr(.{});
             },
             else => {
@@ -936,8 +923,8 @@ pub const Parser = struct {
         self.ast.setNodeData(header, .{ .distinct_header = .{
             .target = target,
             .name = name,
-        }});
-        self.ast.nodePtr(header).head.data = .{ .distinct_header = .{ .attr_head = @intCast(config.attr_head) }};
+        } });
+        self.ast.nodePtr(header).head.data = .{ .distinct_header = .{ .attr_head = @intCast(config.attr_head) } };
 
         const id = try self.pushNode(.distinct_decl, start);
         self.ast.setNodeData(id, .{ .distinct_decl = .{
@@ -945,7 +932,7 @@ pub const Parser = struct {
             .func_head = @intCast(func_head),
             .num_funcs = @intCast(num_funcs),
             .hidden = config.hidden,
-        }});
+        } });
         return id;
     }
 
@@ -961,7 +948,7 @@ pub const Parser = struct {
             .name = name,
             .typeSpec = @intCast(typeSpec),
             .hidden = config.hidden,
-        }});
+        } });
         return id;
     }
 
@@ -981,7 +968,7 @@ pub const Parser = struct {
         self.cur_indent = reqIndent;
         defer self.cur_indent = prevIndent;
 
-        var firstMember = try self.parseEnumMember();
+        const firstMember = try self.parseEnumMember();
         var lastMember = firstMember;
         var numMembers: u32 = 1;
         var isChoiceType = false;
@@ -1014,7 +1001,7 @@ pub const Parser = struct {
             .numMembers = @intCast(numMembers),
             .isChoiceType = isChoiceType,
             .hidden = config.hidden,
-        }});
+        } });
         return id;
     }
 
@@ -1028,22 +1015,22 @@ pub const Parser = struct {
                 .fieldHead = @intCast(fieldsHead),
                 .unnamed = false,
                 .numFields = @intCast(numFields),
-            }});
+            } });
         } else {
             self.ast.setNodeData(header, .{ .objectHeader = .{
                 .name = cy.NullNode,
                 .fieldHead = @intCast(fieldsHead),
                 .unnamed = true,
                 .numFields = @intCast(numFields),
-            }});
+            } });
         }
-        self.ast.nodePtr(header).head.data = .{ .objectHeader = .{ .modHead = @intCast(config.attr_head) }};
+        self.ast.nodePtr(header).head.data = .{ .objectHeader = .{ .modHead = @intCast(config.attr_head) } };
 
         self.ast.setNodeData(id, .{ .objectDecl = .{
             .header = header,
             .funcHead = @intCast(funcsHead),
             .numFuncs = @intCast(numFuncs),
-        }});
+        } });
         return id;
     }
 
@@ -1206,7 +1193,7 @@ pub const Parser = struct {
 
         const nameN = self.ast.nodePtr(name);
         const nameStr = self.ast.nodeString(nameN.*);
-        const block = &self.blockStack.items[self.blockStack.items.len-1];
+        const block = &self.blockStack.items[self.blockStack.items.len - 1];
         try block.vars.put(self.alloc, nameStr, {});
 
         var token = self.peek();
@@ -1221,8 +1208,8 @@ pub const Parser = struct {
             self.ast.setNodeData(header, .{ .funcHeader = .{
                 .name = name,
                 .paramHead = params.head,
-            }});
-            self.ast.nodePtr(header).head.data = .{ .funcHeader = .{ .modHead = @intCast(config.attr_head) }};
+            } });
+            self.ast.nodePtr(header).head.data = .{ .funcHeader = .{ .modHead = @intCast(config.attr_head) } };
 
             const id = try self.pushNode(.funcDecl, start);
             self.ast.setNodeData(id, .{ .func = .{
@@ -1230,7 +1217,7 @@ pub const Parser = struct {
                 .bodyHead = @intCast(res.first),
                 .sig_t = .func,
                 .hidden = config.hidden,
-            }});
+            } });
 
             if (!self.inTemplate) {
                 try self.staticDecls.append(self.alloc, .{
@@ -1246,8 +1233,8 @@ pub const Parser = struct {
             self.ast.setNodeData(header, .{ .funcHeader = .{
                 .name = name,
                 .paramHead = params.head,
-            }});
-            self.ast.nodePtr(header).head.data = .{ .funcHeader = .{ .modHead = @intCast(config.attr_head) }};
+            } });
+            self.ast.nodePtr(header).head.data = .{ .funcHeader = .{ .modHead = @intCast(config.attr_head) } };
 
             const id = try self.pushNode(.funcDecl, start);
             self.ast.setNodeData(id, .{ .func = .{
@@ -1255,7 +1242,7 @@ pub const Parser = struct {
                 .bodyHead = cy.NullNode,
                 .sig_t = .func,
                 .hidden = config.hidden,
-            }});
+            } });
 
             if (!self.inTemplate) {
                 try self.staticDecls.append(self.alloc, .{
@@ -1294,7 +1281,7 @@ pub const Parser = struct {
             self.ast.setNodeData(elseBlock, .{ .else_block = .{
                 .cond = cy.NullNode,
                 .body_head = res.first,
-            }});
+            } });
             return elseBlock;
         } else {
             // else if block.
@@ -1309,7 +1296,7 @@ pub const Parser = struct {
                 self.ast.setNodeData(elseBlock, .{ .else_block = .{
                     .cond = cond,
                     .body_head = res.first,
-                }});
+                } });
 
                 const nested_else = try self.parseElseStmt();
                 if (nested_else != cy.NullNode) {
@@ -1362,7 +1349,7 @@ pub const Parser = struct {
             return self.reportError("Expected colon after switch condition.", &.{});
         }
 
-        var firstCase = (try self.parseCaseBlock()) orelse {
+        const firstCase = (try self.parseCaseBlock()) orelse {
             return self.reportError("Expected case or else block.", &.{});
         };
         var lastCase = firstCase;
@@ -1393,7 +1380,7 @@ pub const Parser = struct {
             .expr = expr,
             .caseHead = @intCast(firstCase),
             .numCases = @intCast(numCases),
-        }});
+        } });
         return switchBlock;
     }
 
@@ -1437,12 +1424,12 @@ pub const Parser = struct {
         self.ast.setNodeData(catchStmt, .{ .catchStmt = .{
             .errorVar = errorVar,
             .bodyHead = catchBody.first,
-        }});
+        } });
 
         self.ast.setNodeData(stmt, .{ .tryStmt = .{
             .bodyHead = tryStmts.first,
             .catchStmt = catchStmt,
-        }});
+        } });
         return stmt;
     }
 
@@ -1468,12 +1455,12 @@ pub const Parser = struct {
             self.ast.setNodeData(if_branch, .{ .if_branch = .{
                 .cond = cond,
                 .body_head = res.first,
-            }});
+            } });
 
             self.ast.setNodeData(ifStmt, .{ .if_stmt = .{
                 .if_branch = if_branch,
                 .else_block = else_block,
-            }});
+            } });
             return ifStmt;
         } else if (token.tag() == .minus_right_angle) {
             self.advance();
@@ -1497,13 +1484,13 @@ pub const Parser = struct {
             self.ast.setNodeData(if_unwrap, .{ .if_unwrap = .{
                 .opt = cond,
                 .unwrap = unwrap,
-            }});
-            self.ast.nodePtr(if_unwrap).head.data = .{ .if_unwrap = .{ .body_head = @intCast(res.first) }};
+            } });
+            self.ast.nodePtr(if_unwrap).head.data = .{ .if_unwrap = .{ .body_head = @intCast(res.first) } };
 
             self.ast.setNodeData(ifStmt, .{ .if_unwrap_stmt = .{
                 .if_unwrap = if_unwrap,
                 .else_block = else_block,
-            }});
+            } });
             return ifStmt;
         } else {
             return self.reportError("Expected colon after if condition.", &.{});
@@ -1540,7 +1527,7 @@ pub const Parser = struct {
                     self.ast.setNodeData(alias, .{ .use_alias = .{
                         .name = name,
                         .target = target,
-                    }});
+                    } });
                     try self.staticDecls.append(self.alloc, .{
                         .declT = .use_alias,
                         .nodeId = alias,
@@ -1571,7 +1558,7 @@ pub const Parser = struct {
         self.ast.setNodeData(import, .{ .import_stmt = .{
             .name = name,
             .spec = spec,
-        }});
+        } });
 
         try self.staticDecls.append(self.alloc, .{
             .declT = .use_import,
@@ -1596,7 +1583,7 @@ pub const Parser = struct {
             const whileStmt = try self.pushNode(.whileInfStmt, start);
             self.ast.setNodeData(whileStmt, .{ .whileInfStmt = .{
                 .bodyHead = res.first,
-            }});
+            } });
             return whileStmt;
         }
 
@@ -1614,7 +1601,7 @@ pub const Parser = struct {
             self.ast.setNodeData(whileStmt, .{ .whileCondStmt = .{
                 .cond = expr_id,
                 .bodyHead = res.first,
-            }});
+            } });
             return whileStmt;
         } else if (token.tag() == .minus_right_angle) {
             self.advance();
@@ -1637,11 +1624,11 @@ pub const Parser = struct {
             self.ast.setNodeData(header, .{ .whileOptHeader = .{
                 .opt = expr_id,
                 .capture = ident,
-            }});
+            } });
             self.ast.setNodeData(whileStmt, .{ .whileOptStmt = .{
                 .header = header,
                 .bodyHead = res.first,
-            }});
+            } });
             return whileStmt;
         } else {
             return self.reportError("Expected :.", &.{});
@@ -1671,7 +1658,7 @@ pub const Parser = struct {
                 .start = iter.data.range.start,
                 .end = iter.data.range.end,
                 .increment = iter.data.range.inc,
-            }});
+            } });
 
             token = self.peek();
             if (token.tag() == .colon) {
@@ -1683,8 +1670,8 @@ pub const Parser = struct {
                 self.ast.setNodeData(for_stmt, .{ .forRangeStmt = .{
                     .header = header,
                     .bodyHead = res.first,
-                }});
-                self.ast.nodePtr(header).head.data = .{ .forRangeHeader = .{ .eachClause = cy.NullNode }};
+                } });
+                self.ast.nodePtr(header).head.data = .{ .forRangeHeader = .{ .eachClause = cy.NullNode } };
                 return for_stmt;
             } else if (token.tag() == .minus_right_angle) {
                 self.advance();
@@ -1708,8 +1695,8 @@ pub const Parser = struct {
                 self.ast.setNodeData(for_stmt, .{ .forRangeStmt = .{
                     .header = header,
                     .bodyHead = res.first,
-                }});
-                self.ast.nodePtr(header).head.data = .{ .forRangeHeader = .{ .eachClause = @intCast(ident) }};
+                } });
+                self.ast.nodePtr(header).head.data = .{ .forRangeHeader = .{ .eachClause = @intCast(ident) } };
                 return for_stmt;
             } else {
                 return self.reportError("Expected :.", &.{});
@@ -1725,14 +1712,14 @@ pub const Parser = struct {
             self.ast.setNodeData(header, .{ .forIterHeader = .{
                 .iterable = expr_id,
                 .eachClause = cy.NullNode,
-            }});
-            self.ast.nodePtr(header).head.data = .{ .forIterHeader = .{ .count = cy.NullNode }};
+            } });
+            self.ast.nodePtr(header).head.data = .{ .forIterHeader = .{ .count = cy.NullNode } };
 
             const forStmt = try self.pushNode(.forIterStmt, start);
             self.ast.setNodeData(forStmt, .{ .forIterStmt = .{
                 .header = header,
                 .bodyHead = res.first,
-            }});
+            } });
             return forStmt;
         } else if (token.tag() == .minus_right_angle) {
             self.advance();
@@ -1767,14 +1754,14 @@ pub const Parser = struct {
             self.ast.setNodeData(header, .{ .forIterHeader = .{
                 .iterable = expr_id,
                 .eachClause = eachClause,
-            }});
-            self.ast.nodePtr(header).head.data = .{ .forIterHeader = .{ .count = @intCast(count) }};
+            } });
+            self.ast.nodePtr(header).head.data = .{ .forIterHeader = .{ .count = @intCast(count) } };
 
             const forStmt = try self.pushNode(.forIterStmt, start);
             self.ast.setNodeData(forStmt, .{ .forIterStmt = .{
                 .header = header,
                 .bodyHead = res.first,
-            }});
+            } });
             return forStmt;
         } else {
             return self.reportError("Expected :.", &.{});
@@ -1793,7 +1780,7 @@ pub const Parser = struct {
     //     try self.pushBlock();
     //     const res = try self.parseIndentedBodyStatements();
     //     _ = self.popBlock();
-        
+
     //     const id = try self.pushNode(.label_decl, start);
     //     self.nodes.items[id].head = .{
     //         .left_right = .{
@@ -1894,14 +1881,14 @@ pub const Parser = struct {
                 .condHead = firstCond,
                 .capture = capture,
                 .numConds = @intCast(numConds),
-            }});
+            } });
         }
 
         self.ast.setNodeData(case, .{ .caseBlock = .{
             .header = header,
             .bodyHead = @intCast(bodyHead),
             .bodyIsExpr = bodyExpr,
-        }});
+        } });
         return case;
     }
 
@@ -1947,7 +1934,7 @@ pub const Parser = struct {
                         const modifier = try self.pushNode(.dirModifier, self.next_pos);
                         self.ast.setNodeData(modifier, .{ .dirModifier = .{
                             .type = dir,
-                        }});
+                        } });
                         self.advance();
                         self.consumeWhitespaceTokens();
 
@@ -1986,7 +1973,7 @@ pub const Parser = struct {
                         const stmt = try self.pushNode(.comptimeStmt, start);
                         self.ast.setNodeData(stmt, .{ .comptimeStmt = .{
                             .expr = callExpr,
-                        }});
+                        } });
                         return stmt;
                     }
                 } else {
@@ -2031,10 +2018,10 @@ pub const Parser = struct {
                 }
             },
             .type_k => {
-                return try self.parseTypeDecl(.{ .attr_head = cy.NullNode, .hidden = false, .allow_decl = config.allow_decls}, true);
+                return try self.parseTypeDecl(.{ .attr_head = cy.NullNode, .hidden = false, .allow_decl = config.allow_decls }, true);
             },
             .func_k => {
-                return try self.parseFuncDecl(.{ .attr_head = cy.NullNode, .hidden = false, .allow_decl = config.allow_decls});
+                return try self.parseFuncDecl(.{ .attr_head = cy.NullNode, .hidden = false, .allow_decl = config.allow_decls });
             },
             .if_k => {
                 return try self.parseIfStatement();
@@ -2115,7 +2102,7 @@ pub const Parser = struct {
     }
 
     fn consumeNewLineOrEnd(self: *Parser) !void {
-        var tag = self.peek().tag();
+        const tag = self.peek().tag();
         if (tag == .new_line) {
             self.advance();
             return;
@@ -2130,8 +2117,7 @@ pub const Parser = struct {
         var token = self.peek();
         while (token.tag() != .null) {
             switch (token.tag()) {
-                .new_line,
-                .indent => {
+                .new_line, .indent => {
                     self.advance();
                     token = self.peek();
                     continue;
@@ -2201,7 +2187,7 @@ pub const Parser = struct {
         self.ast.setNodeData(seqDestr, .{ .seqDestructure = .{
             .head = firstEntry,
             .numArgs = @intCast(numArgs),
-        }});
+        } });
 
         // Parse closing bracket.
         const token = self.peek();
@@ -2223,11 +2209,11 @@ pub const Parser = struct {
             self.ast.setNodeData(array, .{ .arrayLit = .{
                 .argHead = cy.NullNode,
                 .numArgs = 0,
-            }});
+            } });
             return array;
         }
 
-        var first = (try self.parseExpr(.{})) orelse {
+        const first = (try self.parseExpr(.{})) orelse {
             return self.reportError("Expected element expression.", &.{});
         };
         var last = first;
@@ -2261,7 +2247,7 @@ pub const Parser = struct {
         self.ast.setNodeData(array, .{ .arrayLit = .{
             .argHead = first,
             .numArgs = @intCast(nelems),
-        }});
+        } });
         return array;
     }
 
@@ -2278,11 +2264,11 @@ pub const Parser = struct {
                 .argHead = cy.NullNode,
                 .argTail = cy.NullNode,
                 .numArgs = 0,
-            }});
+            } });
             return record;
         }
 
-        var first = try self.parseRecordEntry();
+        const first = try self.parseRecordEntry();
         var last = first;
         var nentries: u32 = 1;
         while (true) {
@@ -2313,7 +2299,7 @@ pub const Parser = struct {
             .argHead = first,
             .argTail = @intCast(last),
             .numArgs = @intCast(nentries),
-        }});
+        } });
         return record;
     }
 
@@ -2341,7 +2327,7 @@ pub const Parser = struct {
         self.ast.setNodeData(pair, .{ .keyValue = .{
             .key = arg,
             .value = val,
-        }});
+        } });
         return pair;
     }
 
@@ -2355,16 +2341,16 @@ pub const Parser = struct {
                 const name = try self.pushSpanNode(.ident, start);
                 _ = self.consume();
                 _ = self.consume();
-                var arg = (try self.parseExpr(.{})) orelse {
+                const arg = (try self.parseExpr(.{})) orelse {
                     return self.reportError("Expected arg expression.", &.{});
                 };
                 const namedArg = try self.pushNode(.namedArg, start);
                 self.ast.setNodeData(namedArg, .{ .namedArg = .{
                     .name = name,
                     .arg = arg,
-                }});
+                } });
                 return namedArg;
-            } 
+            }
         }
 
         return try self.parseExpr(.{});
@@ -2430,7 +2416,7 @@ pub const Parser = struct {
             .argHead = @intCast(res.head),
             .hasNamedArg = hasNamedArg,
             .numArgs = @intCast(res.len),
-        }});
+        } });
         return callExpr;
     }
 
@@ -2448,10 +2434,7 @@ pub const Parser = struct {
         while (true) {
             const token = self.peek();
             switch (token.tag()) {
-                .right_bracket,
-                .right_paren,
-                .new_line,
-                .null => break,
+                .right_bracket, .right_paren, .new_line, .null => break,
                 .comma => {
                     self.advance();
                     const arg = (try self.parseExpr(.{})) orelse {
@@ -2472,7 +2455,7 @@ pub const Parser = struct {
             .argHead = @intCast(firstArg),
             .hasNamedArg = false,
             .numArgs = @intCast(numArgs),
-        }});
+        } });
         return callExpr;
     }
 
@@ -2501,7 +2484,7 @@ pub const Parser = struct {
         if (right_op_prec > op_prec) {
             // Continue parsing right.
             _ = self.consume();
-            var start = self.next_pos;
+            const start = self.next_pos;
             const next_right = try self.parseRightExpr(rightOp);
 
             const binExpr = try self.pushNode(.binExpr, start);
@@ -2509,7 +2492,7 @@ pub const Parser = struct {
                 .left = right_id,
                 .right = @intCast(next_right),
                 .op = rightOp,
-            }});
+            } });
 
             // Before returning the expr, perform left recursion if the op prec greater than the starting op.
             // eg. a + b * c * d
@@ -2534,7 +2517,7 @@ pub const Parser = struct {
                         .left = left,
                         .right = @intCast(rightExpr),
                         .op = rightOp2,
-                    }});
+                    } });
                     left = newBinExpr;
                     continue;
                 } else {
@@ -2581,12 +2564,12 @@ pub const Parser = struct {
         self.ast.setNodeData(ifBranch, .{ .if_branch = .{
             .cond = cond,
             .body_head = body,
-        }});
+        } });
 
         self.ast.setNodeData(res, .{ .if_expr = .{
             .if_branch = ifBranch,
             .else_expr = cy.NullNode,
-        }});
+        } });
 
         const token = self.peek();
         if (token.tag() != .else_k) {
@@ -2662,7 +2645,7 @@ pub const Parser = struct {
             .strHead = @intCast(firstString),
             .exprHead = firstExpr,
             .numExprs = @intCast(numExprs),
-        }});
+        } });
         return id;
     }
 
@@ -2719,12 +2702,12 @@ pub const Parser = struct {
             .argHead = @intCast(first),
             .hasNamedArg = false,
             .numArgs = @intCast(numArgs),
-        }});
+        } });
 
         const coinit = try self.pushNode(.coinit, start);
         self.ast.setNodeData(coinit, .{ .coinit = .{
             .child = callExpr,
-        }});
+        } });
         return coinit;
     }
 
@@ -2751,7 +2734,7 @@ pub const Parser = struct {
                     self.ast.setNodeData(expr_id, .{ .accessExpr = .{
                         .left = left_id,
                         .right = right,
-                    }});
+                    } });
                     left_id = expr_id;
                 },
                 .dot_question => {
@@ -2759,7 +2742,7 @@ pub const Parser = struct {
                     const expr = try self.pushNode(.unwrap, start);
                     self.ast.setNodeData(expr, .{ .unwrap = .{
                         .opt = left_id,
-                    }});
+                    } });
                     left_id = expr;
                 },
                 .left_bracket => {
@@ -2768,7 +2751,7 @@ pub const Parser = struct {
                     self.ast.setNodeData(expr, .{ .array_expr = .{
                         .left = left_id,
                         .array = array,
-                    }});
+                    } });
                     left_id = expr;
                 },
                 .left_brace => {
@@ -2778,57 +2761,14 @@ pub const Parser = struct {
                     self.ast.setNodeData(expr, .{ .record_expr = .{
                         .left = left_id,
                         .record = record,
-                    }});
+                    } });
                     left_id = expr;
                 },
                 .left_paren => {
                     const call_id = try self.parseCallExpression(left_id);
                     left_id = call_id;
                 },
-                .minus_double_dot,
-                .dot_dot,
-                .right_bracket,
-                .right_paren,
-                .right_brace,
-                .else_k,
-                .catch_k,
-                .comma,
-                .colon,
-                .equal,   
-                .plus,
-                .minus,
-                .star,
-                .slash,
-                .ampersand,
-                .vert_bar,
-                .double_vert_bar,
-                .double_left_angle,
-                .double_right_angle,
-                .caret,
-                .left_angle,
-                .left_angle_equal,
-                .right_angle,
-                .right_angle_equal,
-                .percent,
-                .equal_equal,
-                .bang_equal,
-                .and_k,
-                .or_k,
-                .as_k,
-                .minus_right_angle,
-                .raw_string,
-                .string,
-                .bin,
-                .oct,
-                .hex,
-                .dec,
-                .float,
-                .if_k,
-                .ident,
-                .templateString,
-                .equal_right_angle,
-                .new_line,
-                .null => break,
+                .minus_double_dot, .dot_dot, .right_bracket, .right_paren, .right_brace, .else_k, .catch_k, .comma, .colon, .equal, .plus, .minus, .star, .slash, .ampersand, .vert_bar, .double_vert_bar, .double_left_angle, .double_right_angle, .caret, .left_angle, .left_angle_equal, .right_angle, .right_angle_equal, .percent, .equal_equal, .bang_equal, .and_k, .or_k, .as_k, .minus_right_angle, .raw_string, .string, .bin, .oct, .hex, .dec, .float, .if_k, .ident, .templateString, .equal_right_angle, .new_line, .null => break,
                 else => break,
             }
         }
@@ -2837,9 +2777,9 @@ pub const Parser = struct {
 
     /// An expression term doesn't contain a unary/binary expression at the top.
     fn parseTermExprOpt(self: *Parser, config: ParseTermConfig) anyerror!?NodeId {
-        var start = self.next_pos;
+        const start = self.next_pos;
         var token = self.peek();
-        var left_id = switch (token.tag()) {
+        const left_id = switch (token.tag()) {
             .ident => b: {
                 self.advance();
                 const id = try self.pushSpanNode(.ident, start);
@@ -2875,7 +2815,7 @@ pub const Parser = struct {
                         const id = try self.pushNode(.errorSymLit, start);
                         self.ast.setNodeData(id, .{ .errorSymLit = .{
                             .symbol = symbol,
-                        }});
+                        } });
                         break :b id;
                     } else {
                         return self.reportError("Expected symbol identifier.", &.{});
@@ -2892,7 +2832,7 @@ pub const Parser = struct {
                 const id = try self.pushNode(.expandOpt, start);
                 self.ast.setNodeData(id, .{ .expandOpt = .{
                     .param = param,
-                }});
+                } });
                 break :b id;
             },
             .dot => {
@@ -2989,7 +2929,7 @@ pub const Parser = struct {
                     const group = try self.pushNode(.group, start);
                     self.ast.setNodeData(group, .{ .group = .{
                         .child = expr_id,
-                    }});
+                    } });
                     break :b group;
                 } else if (token.tag() == .comma) {
                     self.advance();
@@ -3018,7 +2958,7 @@ pub const Parser = struct {
                 self.ast.setNodeData(expr_id, .{ .unary = .{
                     .child = term_id,
                     .op = .minus,
-                }});
+                } });
                 return expr_id;
             },
             .tilde => {
@@ -3028,7 +2968,7 @@ pub const Parser = struct {
                 self.ast.setNodeData(expr_id, .{ .unary = .{
                     .child = term_id,
                     .op = .bitwiseNot,
-                }});
+                } });
                 return expr_id;
             },
             .bang => {
@@ -3038,21 +2978,19 @@ pub const Parser = struct {
                 self.ast.setNodeData(expr, .{ .unary = .{
                     .child = child,
                     .op = .not,
-                }});
+                } });
                 return expr;
             },
             else => {
                 return null;
-            }
+            },
         };
         return try self.parseTermExprWithLeft(start, left_id, config);
     }
 
     fn returnLeftAssignExpr(self: *Parser, leftId: NodeId, outIsAssignStmt: *bool) !NodeId {
         switch (self.ast.nodeType(leftId)) {
-            .accessExpr,
-            .array_expr,
-            .ident => {
+            .accessExpr, .array_expr, .ident => {
                 outIsAssignStmt.* = true;
                 return leftId;
             },
@@ -3073,7 +3011,7 @@ pub const Parser = struct {
             .left = left,
             .right = @intCast(right),
             .op = op,
-        }});
+        } });
         return expr;
     }
 
@@ -3097,7 +3035,7 @@ pub const Parser = struct {
         self.ast.setNodeData(expr, .{ .comptimeExpr = .{
             .child = child,
             .patchIdx = patchIdx,
-        }});
+        } });
 
         return expr;
     }
@@ -3141,7 +3079,7 @@ pub const Parser = struct {
                 self.ast.setNodeData(expr, .{ .unary = .{
                     .child = child,
                     .op = .not,
-                }});
+                } });
                 return expr;
             },
             .throw_k => {
@@ -3152,7 +3090,7 @@ pub const Parser = struct {
                 const expr = try self.pushNode(.throwExpr, start);
                 self.ast.setNodeData(expr, .{ .throwExpr = .{
                     .child = child,
-                }});
+                } });
                 return expr;
             },
             .if_k => {
@@ -3166,7 +3104,7 @@ pub const Parser = struct {
                 };
                 self.ast.setNodeData(coresume, .{ .coresume = .{
                     .child = fiberExpr,
-                }});
+                } });
                 return coresume;
             },
             .coyield_k => {
@@ -3192,7 +3130,7 @@ pub const Parser = struct {
                 self.ast.setNodeData(tryExpr, .{ .tryExpr = .{
                     .expr = expr,
                     .catchExpr = catchExpr,
-                }});
+                } });
                 return tryExpr;
             },
             .coinit_k => {
@@ -3210,7 +3148,7 @@ pub const Parser = struct {
                     .start = cy.NullNode,
                     .end = @intCast(end),
                     .inc = false,
-                }});
+                } });
                 return range;
             },
             .dot_dot => {
@@ -3225,10 +3163,10 @@ pub const Parser = struct {
                     .start = cy.NullNode,
                     .end = @intCast(end),
                     .inc = true,
-                }});
+                } });
                 return range;
             },
-            else => {}
+            else => {},
         }
         return try self.parseTermExpr(.{});
     }
@@ -3254,10 +3192,7 @@ pub const Parser = struct {
                         break;
                     }
                 },
-                .plus,
-                .minus,
-                .star,
-                .slash => {
+                .plus, .minus, .star, .slash => {
                     if (self.peekAhead(1).tag() == .equal) {
                         if (config.returnLeftAssignExpr) {
                             return try self.returnLeftAssignExpr(left_id, config.outIsAssignStmt);
@@ -3268,21 +3203,7 @@ pub const Parser = struct {
                     const bin_op = toBinExprOp(next.tag()).?;
                     left_id = try self.parseBinExpr(left_id, bin_op);
                 },
-                .ampersand,
-                .vert_bar,
-                .double_vert_bar,
-                .double_left_angle,
-                .double_right_angle,
-                .caret,
-                .left_angle,
-                .left_angle_equal,
-                .right_angle,
-                .percent,
-                .equal_equal,
-                .bang_equal,
-                .and_k,
-                .or_k,
-                .right_angle_equal => {
+                .ampersand, .vert_bar, .double_vert_bar, .double_left_angle, .double_right_angle, .caret, .left_angle, .left_angle_equal, .right_angle, .percent, .equal_equal, .bang_equal, .and_k, .or_k, .right_angle_equal => {
                     const bin_op = toBinExprOp(next.tag()).?;
                     left_id = try self.parseBinExpr(left_id, bin_op);
                 },
@@ -3296,7 +3217,7 @@ pub const Parser = struct {
                         .start = left_id,
                         .end = @intCast(end),
                         .inc = false,
-                    }});
+                    } });
                     left_id = range;
                 },
                 .dot_dot => {
@@ -3309,7 +3230,7 @@ pub const Parser = struct {
                         .start = left_id,
                         .end = @intCast(end),
                         .inc = true,
-                    }});
+                    } });
                     left_id = range;
                 },
                 .as_k => {
@@ -3323,7 +3244,7 @@ pub const Parser = struct {
                     self.ast.setNodeData(expr, .{ .castExpr = .{
                         .expr = left_id,
                         .typeSpec = typeSpec,
-                    }});
+                    } });
                     left_id = expr;
                 },
                 .question => {
@@ -3339,33 +3260,24 @@ pub const Parser = struct {
                     self.ast.setNodeData(expr, .{ .unwrap_or = .{
                         .opt = left_id,
                         .default = default,
-                    }});
+                    } });
                     left_id = expr;
                 },
-                .right_bracket,
-                .right_paren,
-                .right_brace,
-                .else_k,
-                .comma,
-                .colon,
-                .minus_right_angle,
-                .new_line,
-                .null => break,
+                .right_bracket, .right_paren, .right_brace, .else_k, .comma, .colon, .minus_right_angle, .new_line, .null => break,
                 else => {
                     if (!config.parseShorthandCallExpr) {
                         return left_id;
                     }
                     // Attempt to parse as no paren call expr.
                     switch (self.ast.nodeType(left_id)) {
-                        .accessExpr,
-                        .ident => {
+                        .accessExpr, .ident => {
                             return try self.parseNoParenCallExpression(left_id);
                         },
                         else => {
                             return left_id;
-                        }
+                        },
                     }
-                }
+                },
             }
         }
         return left_id;
@@ -3406,7 +3318,7 @@ pub const Parser = struct {
                     const group = try self.pushNode(.group, start);
                     self.ast.setNodeData(group, .{ .group = .{
                         .child = expr,
-                    }});
+                    } });
                     const term = try self.parseTermExprWithLeft(start, group, .{});
                     return self.parseExprWithLeft(start, term, .{});
                 } else if (self.peek().tag() == .comma) {
@@ -3456,7 +3368,7 @@ pub const Parser = struct {
 
         if (self.peek().tag() == .left_paren) {
             self.advance();
-            
+
             // Parse as untyped function.
             const params = try self.parseFuncParams(false);
             if (self.peek().tag() != .colon) {
@@ -3473,8 +3385,8 @@ pub const Parser = struct {
             self.ast.setNodeData(header, .{ .funcHeader = .{
                 .name = name,
                 .paramHead = params.head,
-            }});
-            self.ast.nodePtr(header).head.data = .{ .funcHeader = .{ .modHead = @intCast(attr_head) }};
+            } });
+            self.ast.nodePtr(header).head.data = .{ .funcHeader = .{ .modHead = @intCast(attr_head) } };
 
             const id = try self.pushNode(.funcDecl, start);
             self.ast.setNodeData(id, .{ .func = .{
@@ -3482,7 +3394,7 @@ pub const Parser = struct {
                 .bodyHead = @intCast(res.first),
                 .sig_t = .let,
                 .hidden = hidden,
-            }});
+            } });
 
             if (!self.inTemplate) {
                 try self.staticDecls.append(self.alloc, .{
@@ -3512,14 +3424,14 @@ pub const Parser = struct {
                     .fieldHead = @intCast(fields.head),
                     .unnamed = false,
                     .numFields = @intCast(fields.len),
-                }});
-                self.ast.nodePtr(header).head.data = .{ .objectHeader = .{ .modHead = @intCast(attr_head) }};
+                } });
+                self.ast.nodePtr(header).head.data = .{ .objectHeader = .{ .modHead = @intCast(attr_head) } };
 
                 self.ast.setNodeData(decl, .{ .objectDecl = .{
                     .header = header,
                     .funcHead = @intCast(cy.NullNode),
                     .numFuncs = 0,
-                }});
+                } });
 
                 return decl;
             }
@@ -3528,7 +3440,7 @@ pub const Parser = struct {
                 return self.reportError("Expected `:`.", &.{});
             }
             self.advance();
-            
+
             self.inObjectDecl = true;
             defer self.inObjectDecl = false;
 
@@ -3544,14 +3456,14 @@ pub const Parser = struct {
                 .fieldHead = @intCast(fields.head),
                 .unnamed = false,
                 .numFields = @intCast(fields.len),
-            }});
-            self.ast.nodePtr(header).head.data = .{ .objectHeader = .{ .modHead = @intCast(attr_head) }};
+            } });
+            self.ast.nodePtr(header).head.data = .{ .objectHeader = .{ .modHead = @intCast(attr_head) } };
 
             self.ast.setNodeData(decl, .{ .objectDecl = .{
                 .header = header,
                 .funcHead = @intCast(funcs.head),
                 .numFuncs = @intCast(funcs.len),
-            }});
+            } });
             return decl;
         }
 
@@ -3610,8 +3522,8 @@ pub const Parser = struct {
         self.ast.setNodeData(varSpec, .{ .varSpec = .{
             .name = name,
             .typeSpec = type_spec,
-        }});
-        self.ast.nodePtr(varSpec).head.data = .{ .varSpec = .{ .modHead = @intCast(config.attr_head) }};
+        } });
+        self.ast.nodePtr(varSpec).head.data = .{ .varSpec = .{ .modHead = @intCast(config.attr_head) } };
 
         var decl: cy.NodeId = undefined;
         if (is_static) {
@@ -3646,7 +3558,7 @@ pub const Parser = struct {
                 .typed = config.typed,
                 .root = root,
                 .hidden = config.hidden,
-            }});
+            } });
             try self.staticDecls.append(self.alloc, .{
                 .declT = .variable,
                 .nodeId = decl,
@@ -3657,7 +3569,7 @@ pub const Parser = struct {
                 .varSpec = varSpec,
                 .right = @intCast(right),
                 .typed = config.typed,
-            }});
+            } });
         }
         return decl;
     }
@@ -3668,8 +3580,7 @@ pub const Parser = struct {
         self.advance();
         const token = self.peek();
         switch (token.tag()) {
-            .new_line,
-            .null => {
+            .new_line, .null => {
                 return try self.pushNode(.returnStmt, start);
             },
             else => {
@@ -3678,7 +3589,7 @@ pub const Parser = struct {
                 const id = try self.pushNode(.returnExprStmt, start);
                 self.ast.setNodeData(id, .{ .returnExprStmt = .{
                     .child = right,
-                }});
+                } });
                 return id;
             },
         }
@@ -3686,10 +3597,7 @@ pub const Parser = struct {
 
     fn parseExprOrAssignStatement(self: *Parser) !?NodeId {
         var is_assign_stmt = false;
-        const expr_id = (try self.parseExpr(.{
-            .returnLeftAssignExpr = true,
-            .outIsAssignStmt = &is_assign_stmt
-        })) orelse {
+        const expr_id = (try self.parseExpr(.{ .returnLeftAssignExpr = true, .outIsAssignStmt = &is_assign_stmt })) orelse {
             return null;
         };
 
@@ -3713,12 +3621,9 @@ pub const Parser = struct {
                     self.ast.setNodeData(assignStmt, .{ .assignStmt = .{
                         .left = expr_id,
                         .right = right,
-                    }});
+                    } });
                 },
-                .plus,
-                .minus,
-                .star,
-                .slash => {
+                .plus, .minus, .star, .slash => {
                     self.advance();
                     right = (try self.parseExpr(.{})) orelse {
                         return self.reportError("Expected right expression for assignment statement.", &.{});
@@ -3728,7 +3633,7 @@ pub const Parser = struct {
                         .left = expr_id,
                         .right = @intCast(right),
                         .op = toBinExprOp(assignTag).?,
-                    }});
+                    } });
                 },
                 else => return self.reportErrorAt("Unsupported assignment operator.", &.{}, opStart),
             }
@@ -3736,7 +3641,7 @@ pub const Parser = struct {
             const left = self.ast.nodePtr(expr_id);
             if (left.type() == .ident) {
                 const name = self.ast.nodeString(left.*);
-                const block = &self.blockStack.items[self.blockStack.items.len-1];
+                const block = &self.blockStack.items[self.blockStack.items.len - 1];
                 if (self.deps.get(name)) |node_id| {
                     if (node_id == expr_id) {
                         // Remove dependency now that it's recognized as assign statement.
@@ -3758,7 +3663,7 @@ pub const Parser = struct {
             const id = try self.ast.pushNode(self.alloc, .exprStmt, start);
             self.ast.setNodeData(id, .{ .exprStmt = .{
                 .child = expr_id,
-            }});
+            } });
 
             const token = self.peek();
             if (token.tag() == .new_line) {
@@ -3817,7 +3722,7 @@ pub const Parser = struct {
 
 pub const Result = struct {
     inner: ResultView,
-    
+
     pub fn init(alloc: std.mem.Allocator, view: ResultView) !Result {
         const arr = try view.nodes.clone(alloc);
         const nodes = try alloc.create(std.ArrayListUnmanaged(cy.Node));
@@ -3831,7 +3736,7 @@ pub const Result = struct {
         while (iter.next()) |entry| {
             const dep = entry.key_ptr.*;
             const offset = @intFromPtr(dep.ptr) - @intFromPtr(view.src.ptr);
-            try deps.put(alloc, new_src[offset..offset+dep.len], entry.value_ptr.*);
+            try deps.put(alloc, new_src[offset .. offset + dep.len], entry.value_ptr.*);
         }
 
         return Result{
@@ -3920,53 +3825,31 @@ fn toBinExprOp(op: cy.tokenizer.TokenType) ?cy.ast.BinaryExprOp {
         .equal_equal => .equal_equal,
         .and_k => .and_op,
         .or_k => .or_op,
-        .null,
-        .as_k, .at,
-        .bang, .bin, .break_k,
-        .minus_right_angle, .case_k, .catch_k, .coinit_k, .colon, .comma, .continue_k, .coresume_k, .coyield_k,
-        .dec, .dot, .dot_question, .dot_dot,
-        .else_k, .enum_k, .err, .error_k, .equal, .equal_right_angle,
-        .false_k, .float, .for_k, .func_k,
-        .hex, .ident, .if_k, .module_k, .indent,
-        .left_brace, .left_bracket, .left_paren, .let_k,
-        .minus_double_dot, .new_line, .none_k, .not_k, .object_k, .oct, .pass_k, .placeholder, .pound, .question,
-        .return_k, .right_brace, .right_bracket, .right_paren, .rune, .raw_string,
-        .string, .struct_k, .switch_k, .templateExprStart, .templateString, .template_k,
-        .throw_k, .tilde, .true_k, .try_k, .type_k, .use_k, .var_k, .void_k, .while_k => null,
+        .null, .as_k, .at, .bang, .bin, .break_k, .minus_right_angle, .case_k, .catch_k, .coinit_k, .colon, .comma, .continue_k, .coresume_k, .coyield_k, .dec, .dot, .dot_question, .dot_dot, .else_k, .enum_k, .err, .error_k, .equal, .equal_right_angle, .false_k, .float, .for_k, .func_k, .hex, .ident, .if_k, .module_k, .indent, .left_brace, .left_bracket, .left_paren, .let_k, .minus_double_dot, .new_line, .none_k, .not_k, .object_k, .oct, .pass_k, .placeholder, .pound, .question, .return_k, .right_brace, .right_bracket, .right_paren, .rune, .raw_string, .string, .struct_k, .switch_k, .templateExprStart, .templateString, .template_k, .throw_k, .tilde, .true_k, .try_k, .type_k, .use_k, .var_k, .void_k, .while_k => null,
     };
 }
 
 pub fn getBinOpPrecedence(op: cy.ast.BinaryExprOp) u8 {
     switch (op) {
-        .bitwiseLeftShift,
-        .bitwiseRightShift => return 10,
+        .bitwiseLeftShift, .bitwiseRightShift => return 10,
 
         .bitwiseAnd => return 9,
 
-        .bitwiseXor,
-        .bitwiseOr => return 8,
+        .bitwiseXor, .bitwiseOr => return 8,
 
         .caret => return 7,
 
-        .slash,
-        .percent,
-        .star => {
+        .slash, .percent, .star => {
             return 6;
         },
 
-        .minus,
-        .plus => {
+        .minus, .plus => {
             return 5;
         },
 
         .cast => return 4,
 
-        .greater,
-        .greater_equal,
-        .less,
-        .less_equal,
-        .bang_equal,
-        .equal_equal => {
+        .greater, .greater_equal, .less, .less_equal, .bang_equal, .equal_equal => {
             return 3;
         },
 
@@ -3974,8 +3857,7 @@ pub fn getBinOpPrecedence(op: cy.ast.BinaryExprOp) u8 {
 
         .or_op => return 1,
 
-        .range,
-        .reverse_range => return 0,
+        .range, .reverse_range => return 0,
 
         else => return 0,
     }
@@ -4032,9 +3914,9 @@ test "Parse dependency variables" {
 
 pub fn logSrcPos(src: []const u8, start: u32, len: u32) void {
     if (start + len > src.len) {
-        log.tracev("{s}", .{ src[start..] });
+        log.tracev("{s}", .{src[start..]});
     } else {
-        log.tracev("{s}", .{ src[start..start+len] });
+        log.tracev("{s}", .{src[start .. start + len]});
     }
 }
 
@@ -4096,17 +3978,12 @@ fn isRecedingIndent(p: *Parser, prevIndent: u32, curIndent: u32, indent: u32) !b
 
 fn isRecordKeyNodeType(node_t: cy.NodeType) bool {
     switch (node_t) {
-        .ident,
-        .raw_string_lit,
-        .decLit,
-        .binLit,
-        .octLit,
-        .hexLit => {
+        .ident, .raw_string_lit, .decLit, .binLit, .octLit, .hexLit => {
             return true;
         },
         else => {
             return false;
-        }
+        },
     }
 }
 

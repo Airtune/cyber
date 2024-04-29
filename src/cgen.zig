@@ -60,7 +60,7 @@ const Compiler = struct {
         var new_name: []const u8 = undefined;
         const res = try c.c_names.getOrPut(c.alloc, sym_name);
         if (res.found_existing) {
-            new_name = try std.fmt.allocPrint(c.alloc, "{s}_{}", .{name_n, res.value_ptr.*});
+            new_name = try std.fmt.allocPrint(c.alloc, "{s}_{}", .{ name_n, res.value_ptr.* });
             res.value_ptr.* += 1;
         } else {
             new_name = try std.fmt.allocPrint(c.alloc, "{s}_0", .{name_n});
@@ -81,12 +81,12 @@ fn normalizeSymName(buf: []u8, name: []const u8) ![]const u8 {
         // Normalize to C name.
         var fbuf = std.io.fixedBufferStream(buf);
         const w = fbuf.writer();
-        try w.print("{s}{s}", .{name[0..idx], normalizeChar(name[idx])});
+        try w.print("{s}{s}", .{ name[0..idx], normalizeChar(name[idx]) });
 
-        var rest = name[idx+1..];
+        var rest = name[idx + 1 ..];
         while (std.mem.indexOfAny(u8, rest, ReplaceChars)) |idx2| {
-            try w.print("{s}{s}", .{rest[0..idx2], normalizeChar(rest[idx2])});
-            rest = rest[idx2+1..];
+            try w.print("{s}{s}", .{ rest[0..idx2], normalizeChar(rest[idx2]) });
+            rest = rest[idx2 + 1 ..];
         }
         try w.writeAll(rest);
         return fbuf.getWritten();
@@ -190,7 +190,7 @@ const Chunk = struct {
     }
 
     fn proc(c: *Chunk) *Proc {
-        return &c.procs.items[c.procs.items.len-1];
+        return &c.procs.items[c.procs.items.len - 1];
     }
 
     fn pushProc(c: *Chunk, b: Proc) !void {
@@ -222,7 +222,7 @@ const Chunk = struct {
             var lineStart: u32 = undefined;
             const node = c.ast.node(nodeId);
             c.ast.computeLinePos(node.srcPos, &line, &col, &lineStart);
-            try c.pushSpanFmtEnd("#line {} \"{s}\"", .{line, c.srcUri});
+            try c.pushSpanFmtEnd("#line {} \"{s}\"", .{ line, c.srcUri });
         }
         try c.pushIndent();
     }
@@ -330,7 +330,7 @@ const Chunk = struct {
                     rt.errZFmt(c.sema.compiler.vm, "Unsupported sym type: {}\n", .{id});
                     return error.TODO;
                 }
-            }
+            },
         };
     }
 
@@ -341,7 +341,7 @@ const Chunk = struct {
                 const type_e = c.sema.types.items[id];
                 if (type_e.kind == .object) {
                     const c_name = c.cSymName(type_e.sym);
-                    try c.bufPushFmt("BOX_OBJ({s}, ", .{ c_name });
+                    try c.bufPushFmt("BOX_OBJ({s}, ", .{c_name});
                 } else {
                     const name = c.sema.getTypeBaseName(id);
                     return c.base.reportErrorFmt("Unsupported box macro: {}", &.{v(name)}, null);
@@ -441,8 +441,7 @@ const Cstr = struct {
     }
 };
 
-const Value = struct {
-};
+const Value = struct {};
 
 pub fn gen(self: *cy.Compiler) !cy.compiler.AotCompileResult {
     var compiler = Compiler{
@@ -467,9 +466,7 @@ pub fn gen(self: *cy.Compiler) !cy.compiler.AotCompileResult {
                     }
                     try compiler.genSymName(sym, name);
                 },
-                .bool_t,
-                .custom_object_t,
-                .object_t => {
+                .bool_t, .custom_object_t, .object_t => {
                     try compiler.genSymName(sym, sym.name());
                 },
                 else => {},
@@ -535,7 +532,7 @@ pub fn gen(self: *cy.Compiler) !cy.compiler.AotCompileResult {
     }
 
     for (self.chunks.items, 0..) |chunk, i| {
-        log.tracev("Perform codegen for chunk{}: {s}", .{chunk.id, chunk.srcUri});
+        log.tracev("Perform codegen for chunk{}: {s}", .{ chunk.id, chunk.srcUri });
         try genChunk(&chunks[i]);
         log.tracev("Done. performChunkCodegen {s}", .{chunk.srcUri});
     }
@@ -576,7 +573,7 @@ pub fn gen(self: *cy.Compiler) !cy.compiler.AotCompileResult {
     } else {
         exePath = try std.fmt.allocPrintZ(self.alloc, "out/{s}", .{stemName});
     }
-    errdefer self.alloc.free(exePath); 
+    errdefer self.alloc.free(exePath);
 
     if (self.config.backend == cc.BackendTCC) {
         // const src = try std.fs.cwd().readFileAllocOptions(self.alloc, outPath, 1e9, null, @alignOf(u8), 0);
@@ -612,7 +609,7 @@ pub fn gen(self: *cy.Compiler) !cy.compiler.AotCompileResult {
         // }
 
         if (tcc.tcc_add_file(state, outPath.ptr) == -1) {
-        // if (tcc.tcc_compile_string(state, src.ptr) == -1) {
+            // if (tcc.tcc_compile_string(state, src.ptr) == -1) {
             return error.TCCError;
         }
 
@@ -631,9 +628,9 @@ pub fn gen(self: *cy.Compiler) !cy.compiler.AotCompileResult {
             return error.TCCError;
         }
     } else {
-        var res = try std.ChildProcess.exec(.{
+        const res = try std.ChildProcess.exec(.{
             .allocator = self.alloc,
-            .argv = &.{"clang", "-o", exePath, outPath, "zig-out/lib/librt.a"},
+            .argv = &.{ "clang", "-o", exePath, outPath, "zig-out/lib/librt.a" },
         });
         defer self.alloc.free(res.stderr);
         defer self.alloc.free(res.stdout);
@@ -707,7 +704,7 @@ fn genHead(c: *Compiler, w: std.ArrayListUnmanaged(u8).Writer, chunks: []Chunk) 
                 const params = base.sema.getFuncSig(func.funcSigId).params();
                 if (params.len > 0) {
                     for (params) |param| {
-                        try w.print(", {}", .{ try chunk.cTypeName(param) });
+                        try w.print(", {}", .{try chunk.cTypeName(param)});
                     }
                 }
                 try w.writeAll(");\n");
@@ -719,7 +716,7 @@ fn genHead(c: *Compiler, w: std.ArrayListUnmanaged(u8).Writer, chunks: []Chunk) 
                 const params = funcSig.params();
                 if (params.len > 0) {
                     for (params) |param| {
-                        try w.print(", {}", .{ try chunk.cTypeName(param) });
+                        try w.print(", {}", .{try chunk.cTypeName(param)});
                     }
                 }
                 try w.writeAll(");\n");
@@ -738,20 +735,19 @@ fn genObjectDecl(c: *Chunk, sym: *cy.Sym, w: std.ArrayListUnmanaged(u8).Writer) 
 
     const object_t = sym.cast(.object_t);
     for (object_t.getFields()) |field| {
-        if (field.sym.type == .struct_t) {
-        } else if (field.sym.type == .object_t) {
+        if (field.sym.type == .struct_t) {} else if (field.sym.type == .object_t) {
             try genObjectDecl(c, field.sym, w);
         }
     }
 
     const c_name = c.cSymName(sym);
-    try w.print("typedef struct {s} {{\n", .{ c_name });
+    try w.print("typedef struct {s} {{\n", .{c_name});
     for (object_t.getFields()) |field| {
         try w.print("    {} {s};\n", .{
             try c.cTypeName(field.type), field.sym.name(),
         });
     }
-    try w.print("}} {s};\n", .{ c_name });
+    try w.print("}} {s};\n", .{c_name});
 
     const name = try cStringLit(c, sym.name());
     try w.print(
@@ -762,7 +758,8 @@ fn genObjectDecl(c: *Chunk, sym: *cy.Sym, w: std.ArrayListUnmanaged(u8).Writer) 
         \\    .kind = CbTypeObject,
         \\}};
         \\
-        , .{ c_name, name },
+    ,
+        .{ c_name, name },
     );
     try w.print(
         \\{s}* new{s}(CbRT* rt, {s} init) {{
@@ -777,7 +774,8 @@ fn genObjectDecl(c: *Chunk, sym: *cy.Sym, w: std.ArrayListUnmanaged(u8).Writer) 
         \\}}
         \\
         \\
-        , .{ c_name, c_name, c_name, c_name, c_name, c_name, c_name, c_name, c_name, c_name },
+    ,
+        .{ c_name, c_name, c_name, c_name, c_name, c_name, c_name, c_name, c_name, c_name },
     );
 }
 
@@ -809,41 +807,43 @@ fn genStmts(c: *Chunk, idx: u32) !void {
 fn genStmt(c: *Chunk, loc: u32) anyerror!void {
     const code = c.ir.getStmtCode(loc);
     const nodeId = c.ir.getNode(loc);
-    errdefer if (c.errNodeId == cy.NullId) { c.errNodeId = nodeId; };
+    errdefer if (c.errNodeId == cy.NullId) {
+        c.errNodeId = nodeId;
+    };
 
     if (cy.Trace) {
         const contextStr = try c.encoder.format(nodeId, &cy.tempBuf);
-        log.tracev("----{s}: {{{s}}}", .{@tagName(code), contextStr});
+        log.tracev("----{s}: {{{s}}}", .{ @tagName(code), contextStr });
     }
     switch (code) {
-        .breakStmt          => try breakStmt(c, nodeId),
+        .breakStmt => try breakStmt(c, nodeId),
         // .contStmt           => try contStmt(c, nodeId),
-        .declareLocal       => try declareLocal(c, loc, nodeId),
-        .declareLocalInit   => try declareLocalInit(c, loc, nodeId),
+        .declareLocal => try declareLocal(c, loc, nodeId),
+        .declareLocalInit => try declareLocalInit(c, loc, nodeId),
         // .destrElemsStmt     => try destrElemsStmt(c, idx, nodeId),
-        .exprStmt           => try exprStmt(c, loc, nodeId),
+        .exprStmt => try exprStmt(c, loc, nodeId),
         // .forIterStmt        => try forIterStmt(c, idx, nodeId),
-        .forRangeStmt       => try forRangeStmt(c, loc, nodeId),
-        .funcBlock          => try funcBlock(c, loc, nodeId),
-        .ifStmt             => try ifStmt(c, loc, nodeId),
-        .loopStmt           => try loopStmt(c, loc, nodeId),
-        .mainBlock          => try mainBlock(c, loc, nodeId),
-        .opSet              => try opSet(c, loc, nodeId),
+        .forRangeStmt => try forRangeStmt(c, loc, nodeId),
+        .funcBlock => try funcBlock(c, loc, nodeId),
+        .ifStmt => try ifStmt(c, loc, nodeId),
+        .loopStmt => try loopStmt(c, loc, nodeId),
+        .mainBlock => try mainBlock(c, loc, nodeId),
+        .opSet => try opSet(c, loc, nodeId),
         // .pushDebugLabel     => try pushDebugLabel(c, idx),
-        .retExprStmt        => try retExprStmt(c, loc, nodeId),
+        .retExprStmt => try retExprStmt(c, loc, nodeId),
         // .retStmt            => try retStmt(c),
-        .setCallObjSymTern  => try setCallObjSymTern(c, loc, nodeId),
+        .setCallObjSymTern => try setCallObjSymTern(c, loc, nodeId),
         // .setCaptured        => try setCaptured(c, idx, nodeId),
-        .set_field          => try setField(c, loc, nodeId),
+        .set_field => try setField(c, loc, nodeId),
         // .setFuncSym         => try setFuncSym(c, idx, nodeId),
-        .setIndex           => try setIndex(c, loc, nodeId),
-        .setLocal           => try setLocal(c, loc, nodeId),
+        .setIndex => try setIndex(c, loc, nodeId),
+        .setLocal => try setLocal(c, loc, nodeId),
         // .setObjectField     => try setObjectField(c, idx, .{}, nodeId),
         // .setVarSym          => try setVarSym(c, idx, nodeId),
         // .setLocalType       => try setLocalType(c, idx),
         // .switchStmt         => try switchStmt(c, idx, nodeId),
         // .tryStmt            => try tryStmt(c, idx, nodeId),
-        .verbose            => {
+        .verbose => {
             if (cy.Trace and !cc.verbose()) {
                 cc.setVerbose(true);
                 c.proc().resetVerboseOnEnd = true;
@@ -851,7 +851,7 @@ fn genStmt(c: *Chunk, loc: u32) anyerror!void {
         },
         else => {
             return error.TODO;
-        }
+        },
     }
 
     log.tracev("----{s}: end", .{@tagName(code)});
@@ -876,11 +876,11 @@ fn genExpr(c: *Chunk, loc: usize, cstr: Cstr) anyerror!Value {
 
     if (cy.Trace) {
         const contextStr = try c.encoder.format(nodeId, &cy.tempBuf);
-        log.tracev("{s}: {{{s}}}", .{@tagName(code), contextStr});
+        log.tracev("{s}: {{{s}}}", .{ @tagName(code), contextStr });
     }
 
     const res = try switch (code) {
-        .box                => genBox(c, loc, cstr, nodeId),
+        .box => genBox(c, loc, cstr, nodeId),
         // .captured           => genCaptured(c, idx, cstr, nodeId),
         // .cast               => genCast(c, idx, cstr, nodeId),
         // .coinitCall         => genCoinitCall(c, idx, cstr, nodeId),
@@ -890,26 +890,26 @@ fn genExpr(c: *Chunk, loc: usize, cstr: Cstr) anyerror!Value {
         // .errorv             => genError(c, idx, cstr, nodeId),
         // .falsev             => genFalse(c, cstr, nodeId),
         // .fieldDynamic       => genFieldDynamic(c, idx, cstr, .{}, nodeId),
-        .field              => genField(c, loc, cstr, nodeId),
+        .field => genField(c, loc, cstr, nodeId),
         // .float              => genFloat(c, idx, cstr, nodeId),
         // .funcSym            => genFuncSym(c, idx, cstr, nodeId),
         // .ifExpr             => genIfExpr(c, idx, cstr, nodeId),
-        .int                => genInt(c, loc, cstr, nodeId),
+        .int => genInt(c, loc, cstr, nodeId),
         // .lambda             => genLambda(c, idx, cstr, nodeId),
         // .list               => genList(c, idx, cstr, nodeId),
-        .local              => genLocal(c, loc, cstr, nodeId),
+        .local => genLocal(c, loc, cstr, nodeId),
         // .map                => genMap(c, idx, cstr, nodeId),
-        .object_init        => genObjectInit(c, loc, cstr, nodeId),
+        .object_init => genObjectInit(c, loc, cstr, nodeId),
         // .pre                => return error.Unexpected,
-        .preBinOp           => genBinOp(c, loc, cstr, .{}, nodeId),
-        .preCallDyn         => genCallDyn(c, loc, cstr, nodeId),
-        .preCallFuncSym     => genCallFuncSym(c, loc, cstr, nodeId),
+        .preBinOp => genBinOp(c, loc, cstr, .{}, nodeId),
+        .preCallDyn => genCallDyn(c, loc, cstr, nodeId),
+        .preCallFuncSym => genCallFuncSym(c, loc, cstr, nodeId),
         // .preCallObjSym      => genCallObjSym(c, idx, cstr, nodeId),
         // .preUnOp            => genUnOp(c, idx, cstr, nodeId),
-        .string             => genString(c, loc, cstr, nodeId),
+        .string => genString(c, loc, cstr, nodeId),
         // .stringTemplate     => genStringTemplate(c, idx, cstr, nodeId),
         // .switchBlock        => genSwitchBlock(c, idx, cstr, nodeId),
-        .symbol             => genSymbol(c, loc, cstr, nodeId),
+        .symbol => genSymbol(c, loc, cstr, nodeId),
         // .throw              => genThrow(c, idx, nodeId),
         // .truev              => genTrue(c, cstr, nodeId),
         // .tryExpr            => genTryExpr(c, idx, cstr, nodeId),
@@ -950,7 +950,7 @@ fn mainBlock(c: *Chunk, loc: usize, nodeId: cy.NodeId) !void {
     }
 
     // if (bcgen.shouldGenMainScopeReleaseOps(c.compiler)) {
-        // try genBlockReleaseLocals(c);
+    // try genBlockReleaseLocals(c);
     // }
 
     try c.pushLineNoMapping("return 0;");
@@ -972,7 +972,7 @@ fn declareLocalInit(c: *Chunk, idx: u32, nodeId: cy.NodeId) !void {
     reserveLocal(c, data.id, data.name(), data.declType, data.lifted);
 
     const start = c.bufStart();
-    try c.bufPushFmt("{} {s} = ", .{try c.cTypeName(data.declType), data.name()});
+    try c.bufPushFmt("{} {s} = ", .{ try c.cTypeName(data.declType), data.name() });
 
     const val = try genExpr(c, data.init, Cstr.init());
     _ = val;
@@ -1124,7 +1124,7 @@ fn genSymbol(c: *Chunk, loc: usize, cstr: Cstr, nodeId: cy.NodeId) !Value {
     _ = cstr;
     _ = nodeId;
     const data = c.ir.getExprData(loc, .symbol);
-    try c.bufPushFmt("CB_SYM(\"{s}\", {})", .{data.name, data.name.len});
+    try c.bufPushFmt("CB_SYM(\"{s}\", {})", .{ data.name, data.name.len });
     return Value{};
 }
 
@@ -1153,12 +1153,12 @@ fn reserveLocal(c: *Chunk, ir_id: u8, name: []const u8, declType: cy.TypeId, lif
         .rcCandidate = c.sema.isRcCandidateType(declType),
         .lifted = lifted,
         .type = declType,
-    }};
+    } };
 }
 
 fn setLocal(c: *Chunk, loc: usize, nodeId: cy.NodeId) !void {
     const data = c.ir.getStmtData(loc, .setLocal).generic;
-    const local_loc = c.ir.advanceStmt(loc, .setLocal); 
+    const local_loc = c.ir.advanceStmt(loc, .setLocal);
     const local_data = c.ir.getExprData(local_loc, .local);
 
     const start = c.bufStart();
@@ -1184,7 +1184,7 @@ fn setCallObjSymTern(c: *Chunk, loc: usize, nodeId: cy.NodeId) !void {
     const start = c.bufStart();
     try c.bufPush("cbCallMethDyn(rt, ");
     _ = try genExprAndBox(c, data.rec, Cstr.init());
-    try c.bufPushFmt(", \"{s}\", {}, (CbAny[]){{", .{data.name, data.name.len});
+    try c.bufPushFmt(", \"{s}\", {}, (CbAny[]){{", .{ data.name, data.name.len });
     _ = try genExprAndBox(c, data.index, Cstr.init());
     try c.bufPush(", ");
     _ = try genExprAndBox(c, data.right, Cstr.init());
@@ -1469,7 +1469,7 @@ fn funcBlock(c: *Chunk, loc: usize, nodeId: cy.NodeId) !void {
     try c.pushSpanFmt("{} {s}(CbRT* rt", .{ try c.cTypeName(func.retType), c.cSymName(func) });
     if (params.len > 0) {
         for (params) |param| {
-            try c.pushSpanFmt(", {} {s}", .{ try c.cTypeName(param.declType), param.name()});
+            try c.pushSpanFmt(", {} {s}", .{ try c.cTypeName(param.declType), param.name() });
         }
     }
     try c.pushSpanEnd(") {");
@@ -1610,7 +1610,7 @@ fn ifStmt(c: *Chunk, loc: usize, nodeId: cy.NodeId) !void {
     c.popBlock();
 
     if (data.else_block != cy.NullId) {
-        var else_loc = data.else_block;
+        const else_loc = data.else_block;
         while (else_loc != cy.NullId) {
             try c.pushLineNoMapping("} else {");
             c.pushBlock();
@@ -1654,7 +1654,7 @@ const BinOpOptions = struct {
 fn genBinOp(c: *Chunk, loc: usize, cstr: Cstr, opts: BinOpOptions, nodeId: cy.NodeId) !Value {
     _ = cstr;
     const data = c.ir.getExprData(loc, .preBinOp).binOp;
-    log.tracev("binop {} {}", .{data.op, data.leftT});
+    log.tracev("binop {} {}", .{ data.op, data.leftT });
 
     if (data.op == .and_op) {
         return error.TODO;
@@ -1699,33 +1699,20 @@ fn genBinOp(c: *Chunk, loc: usize, cstr: Cstr, opts: BinOpOptions, nodeId: cy.No
         .index => {
             if (data.leftT == bt.List) {
                 try c.bufPush(", ");
-            // } else if (data.leftT == bt.Tuple) {
-            //     try pushInlineBinExpr(c, .indexTuple, leftv.local, rightv.local, inst.dst, nodeId);
-            // } else if (data.leftT == bt.Map) {
-            //     try pushInlineBinExpr(c, .indexMap, leftv.local, rightv.local, inst.dst, nodeId);
+                // } else if (data.leftT == bt.Tuple) {
+                //     try pushInlineBinExpr(c, .indexTuple, leftv.local, rightv.local, inst.dst, nodeId);
+                // } else if (data.leftT == bt.Map) {
+                //     try pushInlineBinExpr(c, .indexMap, leftv.local, rightv.local, inst.dst, nodeId);
             } else return error.TODO;
             retained = true;
         },
-        .bitwiseAnd,
-        .bitwiseOr,
-        .bitwiseXor,
-        .bitwiseLeftShift,
-        .bitwiseRightShift => {
+        .bitwiseAnd, .bitwiseOr, .bitwiseXor, .bitwiseLeftShift, .bitwiseRightShift => {
             // if (data.leftT == bt.Integer) {
             //     try pushInlineBinExpr(c, getIntOpCode(data.op), leftv.local, rightv.local, inst.dst, nodeId);
             // } else return error.Unexpected;
             return error.TODO;
         },
-        .greater,
-        .greater_equal,
-        .less,
-        .less_equal,
-        .star,
-        .slash,
-        .percent,
-        .caret,
-        .plus,
-        .minus => {
+        .greater, .greater_equal, .less, .less_equal, .star, .slash, .percent, .caret, .plus, .minus => {
             if (data.leftT == bt.Float) {
                 if (data.rightT == bt.Float) {
                     try c.bufPush(cBinOpLit(data.op));
@@ -1843,12 +1830,12 @@ pub fn cStringLit(self: *Chunk, raw: []const u8) ![]const u8 {
     if (std.mem.indexOfAny(u8, raw, ReplaceChars)) |idx| {
         var fbuf = std.io.fixedBufferStream(self.base.tempBufU8.items[0..]);
         const w = fbuf.writer();
-        try w.print("{s}{s}", .{raw[0..idx], S.replacement(raw[idx])});
+        try w.print("{s}{s}", .{ raw[0..idx], S.replacement(raw[idx]) });
 
-        var rest = raw[idx+1..];
+        var rest = raw[idx + 1 ..];
         while (std.mem.indexOfAny(u8, rest, ReplaceChars)) |idx2| {
-            try w.print("{s}{s}", .{rest[0..idx2], S.replacement(rest[idx2])});
-            rest = rest[idx2+1..];
+            try w.print("{s}{s}", .{ rest[0..idx2], S.replacement(rest[idx2]) });
+            rest = rest[idx2 + 1 ..];
         }
         try w.writeAll(rest);
         return fbuf.getWritten();

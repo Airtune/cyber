@@ -133,7 +133,7 @@ fn exit(code: u8) noreturn {
     if (builtin.os.tag == .windows) {
         _ = std.os.windows.kernel32.SetConsoleOutputCP(prevWinConsoleOutputCP);
     }
-    std.os.exit(code);
+    exit(code);
 }
 
 const Command = enum {

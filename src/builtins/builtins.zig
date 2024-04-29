@@ -32,188 +32,188 @@ pub fn funcLoader(_: ?*c.VM, func: c.FuncInfo, out_: [*c]c.FuncResult) callconv(
 const NameFunc = struct { []const u8, cy.ZHostFuncFn };
 const funcs = [_]NameFunc{
     // Utils.
-    .{"copy",           copy},
-    .{"dump",           zErrFunc(dump)},
-    .{"eprint",         eprint},
-    .{"errorReport",    zErrFunc(errorReport)},
-    .{"getObjectRc",    zErrFunc(getObjectRc)},
-    .{"is",             is},
-    .{"isAlpha",        isAlpha},
-    .{"isDigit",        isDigit},
-    .{"isNone",         isNone},
-    .{"must",           zErrFunc(must)},
-    .{"panic",          zErrFunc(panic)},
-    .{"performGC",      zErrFunc(performGC)},
-    .{"print",          print},
-    .{"runestr",        zErrFunc(runestr)},
-    .{"typeof",         typeof},
+    .{ "copy", copy },
+    .{ "dump", zErrFunc(dump) },
+    .{ "eprint", eprint },
+    .{ "errorReport", zErrFunc(errorReport) },
+    .{ "getObjectRc", zErrFunc(getObjectRc) },
+    .{ "is", is },
+    .{ "isAlpha", isAlpha },
+    .{ "isDigit", isDigit },
+    .{ "isNone", isNone },
+    .{ "must", zErrFunc(must) },
+    .{ "panic", zErrFunc(panic) },
+    .{ "performGC", zErrFunc(performGC) },
+    .{ "print", print },
+    .{ "runestr", zErrFunc(runestr) },
+    .{ "typeof", typeof },
 
     // bool
-    .{"bool.$call", boolCall},
+    .{ "bool.$call", boolCall },
 
     // error
-    .{"sym", errorSym},
-    .{"error.$call", errorCall},
-    
+    .{ "sym", errorSym },
+    .{ "error.$call", errorCall },
+
     // int
-    .{"$prefix~", bindings.intNot},
-    .{"$prefix-", bindings.intNeg},
+    .{ "$prefix~", bindings.intNot },
+    .{ "$prefix-", bindings.intNeg },
     // Inlined opcodes allow the right arg to be dynamic so the compiler can gen more of those.
     // So for now, the runtime signature reflects that.
-    .{"$infix<", bindings.intLess},
-    .{"$infix<=", bindings.intLessEq},
-    .{"$infix>", bindings.intGreater},
-    .{"$infix>=", bindings.intGreaterEq},
-    .{"$infix+", bindings.intAdd},
-    .{"$infix-", bindings.intSub},
-    .{"$infix*", bindings.intMul},
-    .{"$infix/", bindings.intDiv},
-    .{"$infix%", bindings.intMod},
-    .{"$infix^", bindings.intPow},
-    .{"$infix&", bindings.intAnd},
-    .{"$infix|", bindings.intOr},
-    .{"$infix||", bindings.intXor},
-    .{"$infix<<", bindings.intLeftShift},
-    .{"$infix>>", bindings.intRightShift},
-    .{"fmt", zErrFunc(intFmt)},
-    .{"fmt", zErrFunc(intFmt2)},
-    .{"int.$call", intCall},
+    .{ "$infix<", bindings.intLess },
+    .{ "$infix<=", bindings.intLessEq },
+    .{ "$infix>", bindings.intGreater },
+    .{ "$infix>=", bindings.intGreaterEq },
+    .{ "$infix+", bindings.intAdd },
+    .{ "$infix-", bindings.intSub },
+    .{ "$infix*", bindings.intMul },
+    .{ "$infix/", bindings.intDiv },
+    .{ "$infix%", bindings.intMod },
+    .{ "$infix^", bindings.intPow },
+    .{ "$infix&", bindings.intAnd },
+    .{ "$infix|", bindings.intOr },
+    .{ "$infix||", bindings.intXor },
+    .{ "$infix<<", bindings.intLeftShift },
+    .{ "$infix>>", bindings.intRightShift },
+    .{ "fmt", zErrFunc(intFmt) },
+    .{ "fmt", zErrFunc(intFmt2) },
+    .{ "int.$call", intCall },
 
     // float
-    .{"$prefix-", bindings.floatNeg},
-    .{"$infix<", bindings.floatLess},
-    .{"$infix<=", bindings.floatLessEq},
-    .{"$infix>", bindings.floatGreater},
-    .{"$infix>=", bindings.floatGreaterEq},
-    .{"$infix+", bindings.floatAdd},
-    .{"$infix-", bindings.floatSub},
-    .{"$infix*", bindings.floatMul},
-    .{"$infix/", bindings.floatDiv},
-    .{"$infix%", bindings.floatMod},
-    .{"$infix^", bindings.floatPow},
-    .{"float.$call", floatCall},
+    .{ "$prefix-", bindings.floatNeg },
+    .{ "$infix<", bindings.floatLess },
+    .{ "$infix<=", bindings.floatLessEq },
+    .{ "$infix>", bindings.floatGreater },
+    .{ "$infix>=", bindings.floatGreaterEq },
+    .{ "$infix+", bindings.floatAdd },
+    .{ "$infix-", bindings.floatSub },
+    .{ "$infix*", bindings.floatMul },
+    .{ "$infix/", bindings.floatDiv },
+    .{ "$infix%", bindings.floatMod },
+    .{ "$infix^", bindings.floatPow },
+    .{ "float.$call", floatCall },
 
     // List
-    .{"$index",     bindings.listIndex},
-    .{"$index",     zErrFunc(bindings.listSlice)},
-    .{"$setIndex",  bindings.listSetIndex},
-    .{"append",     zErrFunc(bindings.listAppend)},
-    .{"appendAll",  zErrFunc(bindings.listAppendAll)},
-    .{"insert",     bindings.listInsert},
-    .{"iterator",   bindings.listIterator},
-    .{"join",       zErrFunc(bindings.listJoin)},
-    .{"len",        bindings.listLen},
-    .{"remove",     bindings.listRemove},
-    .{"resize",     bindings.listResize},
+    .{ "$index", bindings.listIndex },
+    .{ "$index", zErrFunc(bindings.listSlice) },
+    .{ "$setIndex", bindings.listSetIndex },
+    .{ "append", zErrFunc(bindings.listAppend) },
+    .{ "appendAll", zErrFunc(bindings.listAppendAll) },
+    .{ "insert", bindings.listInsert },
+    .{ "iterator", bindings.listIterator },
+    .{ "join", zErrFunc(bindings.listJoin) },
+    .{ "len", bindings.listLen },
+    .{ "remove", bindings.listRemove },
+    .{ "resize", bindings.listResize },
     // .{"sort", bindings.listSort, .standard},
-    .{"List.fill",  listFill},
+    .{ "List.fill", listFill },
 
     // ListIterator
-    .{"next", bindings.listIteratorNext},
+    .{ "next", bindings.listIteratorNext },
 
     // Tuple
-    .{"$index", bindings.tupleIndex},
+    .{ "$index", bindings.tupleIndex },
 
     // Map
-    .{"$initPair", zErrFunc(bindings.mapSetIndex)},
-    .{"$index", bindings.mapIndex},
-    .{"$setIndex", zErrFunc(bindings.mapSetIndex)},
-    .{"contains", bindings.mapContains},
-    .{"get", bindings.mapGet},
-    .{"remove", bindings.mapRemove},
-    .{"size", bindings.mapSize},
-    .{"iterator", bindings.mapIterator},
+    .{ "$initPair", zErrFunc(bindings.mapSetIndex) },
+    .{ "$index", bindings.mapIndex },
+    .{ "$setIndex", zErrFunc(bindings.mapSetIndex) },
+    .{ "contains", bindings.mapContains },
+    .{ "get", bindings.mapGet },
+    .{ "remove", bindings.mapRemove },
+    .{ "size", bindings.mapSize },
+    .{ "iterator", bindings.mapIterator },
 
     // MapIterator
-    .{"next", bindings.mapIteratorNext},
+    .{ "next", bindings.mapIteratorNext },
 
     // String
-    .{"$infix+", string.concat},
-    .{"concat", string.concat},
-    .{"count", string.count},
-    .{"endsWith", string.endsWith},
-    .{"find", string.find},
-    .{"findAnyRune", string.findAnyRune},
-    .{"findRune", string.findRune},
-    .{"insert", zErrFunc(string.insertFn)},
-    .{"isAscii", string.isAscii},
-    .{"len", string.lenFn},
-    .{"less", string.less},
-    .{"lower", string.lower},
-    .{"replace", string.stringReplace},
-    .{"repeat", string.repeat},
-    .{"seek", zErrFunc(string.seek)},
-    .{"sliceAt", zErrFunc(string.sliceAt)},
-    .{"$index", zErrFunc(string.runeAt)},
-    .{"$index", string.sliceFn},
-    .{"split", zErrFunc(string.split)},
-    .{"startsWith", string.startsWith},
-    .{"trim", string.trim},
-    .{"upper", string.upper},
-    .{"String.$call", zErrFunc(string.stringCall)},
+    .{ "$infix+", string.concat },
+    .{ "concat", string.concat },
+    .{ "count", string.count },
+    .{ "endsWith", string.endsWith },
+    .{ "find", string.find },
+    .{ "findAnyRune", string.findAnyRune },
+    .{ "findRune", string.findRune },
+    .{ "insert", zErrFunc(string.insertFn) },
+    .{ "isAscii", string.isAscii },
+    .{ "len", string.lenFn },
+    .{ "less", string.less },
+    .{ "lower", string.lower },
+    .{ "replace", string.stringReplace },
+    .{ "repeat", string.repeat },
+    .{ "seek", zErrFunc(string.seek) },
+    .{ "sliceAt", zErrFunc(string.sliceAt) },
+    .{ "$index", zErrFunc(string.runeAt) },
+    .{ "$index", string.sliceFn },
+    .{ "split", zErrFunc(string.split) },
+    .{ "startsWith", string.startsWith },
+    .{ "trim", string.trim },
+    .{ "upper", string.upper },
+    .{ "String.$call", zErrFunc(string.stringCall) },
 
     // Array
-    .{"$infix+",        arrayConcat},
-    .{"concat",         arrayConcat},
-    .{"decode",         arrayDecode},
-    .{"decode",         arrayDecode1},
-    .{"endsWith",       arrayEndsWith},
-    .{"find",           arrayFind},
-    .{"findAnyByte",    arrayFindAnyByte},
-    .{"findByte",       arrayFindByte},
-    .{"fmt",            zErrFunc(arrayFmt)},
-    .{"getByte",        zErrFunc(arrayGetByte)},
-    .{"getInt",         zErrFunc(arrayGetInt)},
-    .{"getInt32",       zErrFunc(arrayGetInt32)},
-    .{"insert",         arrayInsert},
-    .{"insertByte",     arrayInsertByte},
-    .{"len",            arrayLen},
-    .{"repeat",         zErrFunc(arrayRepeat)},
-    .{"replace",        arrayReplace},
-    .{"$index",         zErrFunc(arrayGetByte)},
-    .{"$index",         arraySlice},
-    .{"split",          zErrFunc(arraySplit)},
-    .{"startsWith",     arrayStartsWith},
-    .{"trim",           zErrFunc(arrayTrim)},
-    .{"Array.$call",  zErrFunc(arrayCall)},
+    .{ "$infix+", arrayConcat },
+    .{ "concat", arrayConcat },
+    .{ "decode", arrayDecode },
+    .{ "decode", arrayDecode1 },
+    .{ "endsWith", arrayEndsWith },
+    .{ "find", arrayFind },
+    .{ "findAnyByte", arrayFindAnyByte },
+    .{ "findByte", arrayFindByte },
+    .{ "fmt", zErrFunc(arrayFmt) },
+    .{ "getByte", zErrFunc(arrayGetByte) },
+    .{ "getInt", zErrFunc(arrayGetInt) },
+    .{ "getInt32", zErrFunc(arrayGetInt32) },
+    .{ "insert", arrayInsert },
+    .{ "insertByte", arrayInsertByte },
+    .{ "len", arrayLen },
+    .{ "repeat", zErrFunc(arrayRepeat) },
+    .{ "replace", arrayReplace },
+    .{ "$index", zErrFunc(arrayGetByte) },
+    .{ "$index", arraySlice },
+    .{ "split", zErrFunc(arraySplit) },
+    .{ "startsWith", arrayStartsWith },
+    .{ "trim", zErrFunc(arrayTrim) },
+    .{ "Array.$call", zErrFunc(arrayCall) },
 
     // pointer
-    .{"addr", pointerAddr},
-    .{"asObject", pointerAsObject},
-    .{"fromCstr", zErrFunc(pointerFromCstr)},
-    .{"get", zErrFunc(pointerGet)},
-    .{"set", zErrFunc(pointerSet)},
-    .{"toArray", zErrFunc(pointerToArray)},
-    .{"pointer.$call", pointerCall},
+    .{ "addr", pointerAddr },
+    .{ "asObject", pointerAsObject },
+    .{ "fromCstr", zErrFunc(pointerFromCstr) },
+    .{ "get", zErrFunc(pointerGet) },
+    .{ "set", zErrFunc(pointerSet) },
+    .{ "toArray", zErrFunc(pointerToArray) },
+    .{ "pointer.$call", pointerCall },
 
     // ExternFunc
-    .{"addr", externFuncAddr},
+    .{ "addr", externFuncAddr },
 
     // Fiber
-    .{"status", fiberStatus},
+    .{ "status", fiberStatus },
 
     // metatype
-    .{"id", metatypeId},
+    .{ "id", metatypeId },
 };
 
 const NameType = struct { []const u8, cy.TypeId };
 const types = [_]NameType{
-    .{"bool", bt.Boolean },
-    .{"error", bt.Error },
-    .{"int", bt.Integer },
-    .{"float", bt.Float }, 
-    .{"List", bt.List },
-    .{"ListIterator", bt.ListIter },
-    .{"Tuple", bt.Tuple },
-    .{"Table", bt.Table },
-    .{"Map", bt.Map },
-    .{"MapIterator", bt.MapIter },
-    .{"String", bt.String },
-    .{"Array", bt.Array },
-    .{"pointer", bt.Pointer },
-    .{"ExternFunc", bt.ExternFunc },
-    .{"Fiber", bt.Fiber },
-    .{"metatype", bt.MetaType },
+    .{ "bool", bt.Boolean },
+    .{ "error", bt.Error },
+    .{ "int", bt.Integer },
+    .{ "float", bt.Float },
+    .{ "List", bt.List },
+    .{ "ListIterator", bt.ListIter },
+    .{ "Tuple", bt.Tuple },
+    .{ "Table", bt.Table },
+    .{ "Map", bt.Map },
+    .{ "MapIterator", bt.MapIter },
+    .{ "String", bt.String },
+    .{ "Array", bt.Array },
+    .{ "pointer", bt.Pointer },
+    .{ "ExternFunc", bt.ExternFunc },
+    .{ "Fiber", bt.Fiber },
+    .{ "metatype", bt.MetaType },
 };
 
 pub fn typeLoader(_: ?*c.VM, info: c.TypeInfo, out_: [*c]c.TypeResult) callconv(.C) bool {
@@ -232,36 +232,36 @@ pub fn typeLoader(_: ?*c.VM, info: c.TypeInfo, out_: [*c]c.TypeResult) callconv(
 const CustomType = bool;
 const NameType2 = struct { []const u8, cy.TypeId, CustomType };
 const vm_types = [_]NameType2{
-    .{"void", bt.Void, true },
-    .{"bool", bt.Boolean, false },
-    .{"symbol", bt.Symbol, false },
-    .{"error", bt.Error, false },
-    .{"int", bt.Integer, false },
-    .{"float", bt.Float, false }, 
-    .{"placeholder1", bt.Placeholder1, true }, 
-    .{"placeholder2", bt.Placeholder2, true }, 
-    .{"placeholder3", bt.Placeholder3, true }, 
-    .{"dynamic", bt.Dynamic, true },
-    .{"any", bt.Any, true },
-    .{"type", bt.Type, true },
-    .{"List", bt.List, true },
-    .{"ListIterator", bt.ListIter, true },
-    .{"Tuple", bt.Tuple, true },
-    .{"Table", bt.Table, false },
-    .{"Map", bt.Map, true },
-    .{"MapIterator", bt.MapIter, true },
-    .{"String", bt.String, true },
-    .{"Array", bt.Array, true },
-    .{"pointer", bt.Pointer, true },
-    .{"Closure", bt.Closure, true },
-    .{"Lambda", bt.Lambda, true },
-    .{"HostFunc", bt.HostFunc, true },
-    .{"ExternFunc", bt.ExternFunc, true },
-    .{"Fiber", bt.Fiber, true },
-    .{"metatype", bt.MetaType, true },
-    .{"Range", bt.Range, true },
-    .{"Box", bt.Box, true },
-    .{"TccState", bt.TccState, true },
+    .{ "void", bt.Void, true },
+    .{ "bool", bt.Boolean, false },
+    .{ "symbol", bt.Symbol, false },
+    .{ "error", bt.Error, false },
+    .{ "int", bt.Integer, false },
+    .{ "float", bt.Float, false },
+    .{ "placeholder1", bt.Placeholder1, true },
+    .{ "placeholder2", bt.Placeholder2, true },
+    .{ "placeholder3", bt.Placeholder3, true },
+    .{ "dynamic", bt.Dynamic, true },
+    .{ "any", bt.Any, true },
+    .{ "type", bt.Type, true },
+    .{ "List", bt.List, true },
+    .{ "ListIterator", bt.ListIter, true },
+    .{ "Tuple", bt.Tuple, true },
+    .{ "Table", bt.Table, false },
+    .{ "Map", bt.Map, true },
+    .{ "MapIterator", bt.MapIter, true },
+    .{ "String", bt.String, true },
+    .{ "Array", bt.Array, true },
+    .{ "pointer", bt.Pointer, true },
+    .{ "Closure", bt.Closure, true },
+    .{ "Lambda", bt.Lambda, true },
+    .{ "HostFunc", bt.HostFunc, true },
+    .{ "ExternFunc", bt.ExternFunc, true },
+    .{ "Fiber", bt.Fiber, true },
+    .{ "metatype", bt.MetaType, true },
+    .{ "Range", bt.Range, true },
+    .{ "Box", bt.Box, true },
+    .{ "TccState", bt.TccState, true },
 };
 
 pub fn vmTypeLoader(_: ?*c.VM, info: c.TypeInfo, out_: [*c]c.TypeResult) callconv(.C) bool {
@@ -307,27 +307,27 @@ pub fn onLoad(vm_: ?*c.VM, mod: c.Sym) callconv(.C) void {
 
     const int_t = c.newType(vm_, bt.Integer);
     defer c.release(vm_, int_t);
-    OptionInt = c.expandTypeTemplate(option_tmpl, @constCast(&[_]c.Value{ int_t }), 1);
+    OptionInt = c.expandTypeTemplate(option_tmpl, @constCast(&[_]c.Value{int_t}), 1);
 
     const any_t = c.newType(vm_, bt.Any);
     defer c.release(vm_, any_t);
-    OptionAny = c.expandTypeTemplate(option_tmpl, @constCast(&[_]c.Value{ any_t }), 1);
+    OptionAny = c.expandTypeTemplate(option_tmpl, @constCast(&[_]c.Value{any_t}), 1);
 
     const tuple_t = c.newType(vm_, bt.Tuple);
     defer c.release(vm_, tuple_t);
-    OptionTuple = c.expandTypeTemplate(option_tmpl, @constCast(&[_]c.Value{ tuple_t }), 1);
+    OptionTuple = c.expandTypeTemplate(option_tmpl, @constCast(&[_]c.Value{tuple_t}), 1);
 
     const map_t = c.newType(vm_, bt.Map);
     defer c.release(vm_, map_t);
-    OptionMap = c.expandTypeTemplate(option_tmpl, @constCast(&[_]c.Value{ map_t }), 1);
+    OptionMap = c.expandTypeTemplate(option_tmpl, @constCast(&[_]c.Value{map_t}), 1);
 
     const array_t = c.newType(vm_, bt.Array);
     defer c.release(vm_, array_t);
-    OptionArray = c.expandTypeTemplate(option_tmpl, @constCast(&[_]c.Value{ array_t }), 1);
+    OptionArray = c.expandTypeTemplate(option_tmpl, @constCast(&[_]c.Value{array_t}), 1);
 
     const string_t = c.newType(vm_, bt.String);
     defer c.release(vm_, string_t);
-    OptionString = c.expandTypeTemplate(option_tmpl, @constCast(&[_]c.Value{ string_t }), 1);
+    OptionString = c.expandTypeTemplate(option_tmpl, @constCast(&[_]c.Value{string_t}), 1);
 
     // Verify all core types have been initialized.
     if (cy.Trace) {
@@ -347,8 +347,8 @@ pub fn cFunc(func: *const fn (vm: cy.Context, args: [*]const Value, nargs: u8) c
 pub fn zErrFunc(comptime func: fn (vm: *cy.VM, args: [*]const Value, nargs: u8) anyerror!Value) cy.ZHostFuncFn {
     const S = struct {
         pub fn genFunc(vm: *cy.VM, args: [*]const Value, nargs: u8) callconv(.C) Value {
-            return @call(.always_inline, func, .{vm, args, nargs}) catch |err| {
-                return @call(.never_inline, prepThrowZError, .{vm, err, @errorReturnTrace()});
+            return @call(.always_inline, func, .{ vm, args, nargs }) catch |err| {
+                return @call(.never_inline, prepThrowZError, .{ vm, err, @errorReturnTrace() });
             };
         }
     };
@@ -378,19 +378,19 @@ pub fn prepThrowZError2(ctx: cy.Context, err: anyerror, optTrace: ?*std.builtin.
 
 fn errorSymbol(err: anyerror) Symbol {
     switch (err) {
-        error.AssertError           => return .AssertError,
-        error.EvalError             => return .EvalError,
-        error.Unicode               => return .Unicode,
-        error.InvalidResult         => return .InvalidResult,
-        error.InvalidArgument       => return .InvalidArgument,
-        error.InvalidEnumTag        => return .InvalidArgument,
-        error.FileNotFound          => return .FileNotFound,
-        error.OutOfBounds           => return .OutOfBounds,
-        error.PermissionDenied      => return .PermissionDenied,
-        error.StdoutStreamTooLong   => return .StreamTooLong,
-        error.StderrStreamTooLong   => return .StreamTooLong,
-        error.EndOfStream           => return .EndOfStream,
-        else                        => return .UnknownError,
+        error.AssertError => return .AssertError,
+        error.EvalError => return .EvalError,
+        error.Unicode => return .Unicode,
+        error.InvalidResult => return .InvalidResult,
+        error.InvalidArgument => return .InvalidArgument,
+        error.InvalidEnumTag => return .InvalidArgument,
+        error.FileNotFound => return .FileNotFound,
+        error.OutOfBounds => return .OutOfBounds,
+        error.PermissionDenied => return .PermissionDenied,
+        error.StdoutStreamTooLong => return .StreamTooLong,
+        error.StderrStreamTooLong => return .StreamTooLong,
+        error.EndOfStream => return .EndOfStream,
+        else => return .UnknownError,
     }
 }
 
@@ -630,14 +630,14 @@ fn arrayInsert(vm: *cy.VM, args: [*]const Value, _: u8) Value {
     const idx = args[1].asInteger();
     if (idx < 0 or idx > slice.len) {
         return rt.prepThrowError(vm, .OutOfBounds);
-    } 
+    }
     const insert = args[2].asArray();
     const new = vm.allocUnsetArrayObject(slice.len + insert.len) catch cy.fatal();
     const buf = new.array.getMutSlice();
     const uidx: u32 = @intCast(idx);
     std.mem.copy(u8, buf[0..uidx], slice[0..uidx]);
-    std.mem.copy(u8, buf[uidx..uidx+insert.len], insert);
-    std.mem.copy(u8, buf[uidx+insert.len..], slice[uidx..]);
+    std.mem.copy(u8, buf[uidx .. uidx + insert.len], insert);
+    std.mem.copy(u8, buf[uidx + insert.len ..], slice[uidx..]);
     return Value.initNoCycPtr(new);
 }
 
@@ -674,7 +674,7 @@ fn arrayEndsWith(_: *cy.VM, args: [*]const Value, _: u8) Value {
 
 fn arrayDecode(vm: *cy.VM, args: [*]const Value, nargs: u8) Value {
     const encoding = Value.initSymbol(@intFromEnum(Symbol.utf8));
-    return arrayDecode1(vm, &[_]Value{args[0], encoding}, nargs);
+    return arrayDecode1(vm, &[_]Value{ args[0], encoding }, nargs);
 }
 
 fn arrayDecode1(vm: *cy.VM, args: [*]const Value, _: u8) Value {
@@ -726,7 +726,7 @@ fn arrayGetInt(_: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
 
     if (idx < 0 or idx + 6 > slice.len) return error.OutOfBounds;
     const uidx: usize = @intCast(idx);
-    const val = std.mem.readVarInt(u48, slice[uidx..uidx+6], endian);
+    const val = std.mem.readVarInt(u48, slice[uidx .. uidx + 6], endian);
     return Value.initInt(@bitCast(val));
 }
 
@@ -744,7 +744,7 @@ fn arrayGetInt32(_: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
 
     if (idx < 0 or idx + 4 > slice.len) return error.OutOfBounds;
     const uidx: usize = @intCast(idx);
-    const val = std.mem.readVarInt(u48, slice[uidx..uidx+4], endian);
+    const val = std.mem.readVarInt(u48, slice[uidx .. uidx + 4], endian);
     return Value.initInt(@intCast(val));
 }
 
@@ -823,7 +823,7 @@ fn arrayFmt(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
 
         var buf: std.ArrayListUnmanaged(u8) = .{};
         defer buf.deinit(vm.alloc);
-        var w = buf.writer(vm.alloc);
+        const w = buf.writer(vm.alloc);
         for (arr) |byte| {
             try std.fmt.formatInt(byte, base, .lower, .{ .width = width, .fill = '0' }, w);
         }
@@ -852,7 +852,7 @@ fn arrayTrim(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
         .ends => res = std.mem.trim(u8, slice, trimRunes),
         else => {
             return rt.prepThrowError(vm, .InvalidArgument);
-        }
+        },
     }
 
     return vm.allocArray(res);
@@ -888,14 +888,14 @@ fn arrayInsertByte(vm: *cy.VM, args: [*]const Value, _: u8) Value {
     const index: i48 = args[1].asInteger();
     if (index < 0 or index > str.len) {
         return rt.prepThrowError(vm, .OutOfBounds);
-    } 
+    }
     const byte: u8 = @intCast(args[2].asInteger());
     const new = vm.allocUnsetArrayObject(str.len + 1) catch cy.fatal();
     const buf = new.array.getMutSlice();
     const uidx: usize = @intCast(index);
     std.mem.copy(u8, buf[0..uidx], str[0..uidx]);
     buf[uidx] = byte;
-    std.mem.copy(u8, buf[uidx+1..], str[uidx..]);
+    std.mem.copy(u8, buf[uidx + 1 ..], str[uidx..]);
     return Value.initNoCycPtr(new);
 }
 
@@ -908,7 +908,7 @@ fn arrayRepeat(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
         return rt.prepThrowError(vm, .InvalidArgument);
     }
 
-    var un: u32 = @intCast(n);
+    const un: u32 = @intCast(n);
     const len = un * slice.len;
     if (un > 1 and len > 0) {
         const new = try vm.allocUnsetArrayObject(len);
@@ -919,7 +919,7 @@ fn arrayRepeat(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
         var i: u32 = 0;
         var dst: u32 = 0;
         while (i < un) : (i += 1) {
-            std.mem.copy(u8, buf[dst..dst + slice.len], slice);
+            std.mem.copy(u8, buf[dst .. dst + slice.len], slice);
             dst += @intCast(slice.len);
         }
 
@@ -1015,7 +1015,7 @@ fn pointerGet(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
         },
         else => {
             return error.InvalidArgument;
-        }
+        },
     }
 }
 
@@ -1037,7 +1037,7 @@ fn pointerSet(_: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
                 },
                 else => {
                     return error.InvalidArgument;
-                }
+                },
             }
         },
         .voidPtr => {
@@ -1054,12 +1054,12 @@ fn pointerSet(_: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
                 },
                 else => {
                     return error.InvalidArgument;
-                }
+                },
             }
         },
         else => {
             return error.InvalidArgument;
-        }
+        },
     }
 }
 
@@ -1069,7 +1069,7 @@ fn pointerToArray(vm: *cy.VM, args: [*]const Value, _: u8) anyerror!Value {
     const len: u48 = @bitCast(args[2].asInteger());
     const raw: [*]const u8 = @ptrCast(obj.pointer.ptr);
     const uoff: usize = @intCast(off);
-    return vm.allocArray(raw[uoff..@intCast(uoff+len)]);
+    return vm.allocArray(raw[uoff..@intCast(uoff + len)]);
 }
 
 fn pointerCall(vm: *cy.VM, args: [*]const Value, _: u8) Value {
@@ -1194,7 +1194,7 @@ fn intCall(_: *cy.VM, args: [*]const Value, _: u8) Value {
         },
         else => {
             return Value.initInt(0);
-        }
+        },
     }
 }
 
@@ -1220,7 +1220,7 @@ fn floatCall(vm: *cy.VM, args: [*]const Value, _: u8) Value {
         else => {
             vm.release(val);
             return vm.prepPanic("Not a type that can be converted to `float`.");
-        }
+        },
     }
 }
 
